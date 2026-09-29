@@ -220,19 +220,27 @@ export interface IntroScreen {
   image: string
   alt: string
   lines: string[]
+  /* lineas que solo se ven si hoy es festivo */
+  festivo?: string[]
   cta: string
 }
 
 const CLEAN = '/assets-english/intro-clean'
 
+/* Textos de la introduccion. Se pueden usar estas etiquetas y se sustituyen
+   solas al abrir la pagina:
+     {dia} {mes} {anio} {diaSemana} {hora} {saludo} {frase} {festivo}
+     {repo} {push} {lenguaje} {norepos}                                 */
 export const INTRO_SCREENS: IntroScreen[] = [
   {
     image: `${CLEAN}/Intro0.png`,
     alt: 'Carta del Ministerio de Admisión de {mes}',
     lines: [
-      'El sorteo laboral del {} {mes} ha terminado.',
+      '{saludo}. El sorteo laboral del {dia} de {mes} ha terminado.',
       'Su nombre ha sido seleccionado.',
+      '{frase}',
     ],
+    festivo: ['Hoy es {festivo}. Se concede una pausa.'],
     cta: 'CONTINUAR',
   },
   {
@@ -241,6 +249,7 @@ export const INTRO_SCREENS: IntroScreen[] = [
     lines: [
       'Para su colocación inmediata, preséntese en el',
       'Ministerio de Admisión, Puesto de Frontera de Grestin.',
+      'Son las {hora}. El turno avanza.',
     ],
     cta: 'CONTINUAR',
   },
@@ -249,7 +258,7 @@ export const INTRO_SCREENS: IntroScreen[] = [
     alt: 'Documentación del solicitante',
     lines: [
       'Se le proporcionará un apartamento para usted y',
-      'su familia en Grestin Este. Clase-8.',
+      'su familia en Valladolid Este. Clase-8.',
     ],
     cta: 'CONTINUAR',
   },
@@ -257,6 +266,7 @@ export const INTRO_SCREENS: IntroScreen[] = [
     image: `${CLEAN}/Arstotzka.png`,
     alt: 'Arstotzka',
     lines: [
+      'Programando desde 2022.',
       'Gloria a Arstotzka.',
     ],
     cta: 'CONTINUAR',
@@ -266,7 +276,8 @@ export const INTRO_SCREENS: IntroScreen[] = [
     alt: 'Puesto de inspección',
     lines: [
       'Su plaza ha sido asignada: inspector de admisiones.',
-      'Revise la documentación. Observe todos sus datos y juzgue usted mismo.',
+      'Revise la documentación. Apruebe o deniegue.',
+      'Repo: "{repo}" · último push {push}.',
     ],
     cta: 'CONTINUAR',
   },
@@ -274,7 +285,8 @@ export const INTRO_SCREENS: IntroScreen[] = [
     image: `${CLEAN}/WaitingLine.png`,
     alt: 'Cola de solicitantes',
     lines: [
-      'El desarrollador espera en la cola de solicitantes. Revise su documentación y prepárese para el turno.',
+      'El solicitante espera su turno',
+      '{norepos} repositorios públicos. Este es uno de ellos',
     ],
     cta: 'COMENZAR TURNO',
   },

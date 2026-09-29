@@ -578,6 +578,12 @@ canvas {
   color: #d8d3c2;
 }
 
+/* linea que solo sale si hoy es festivo.
+   Selector con dos clases para ganar a ".intro-copy p" de arriba. */
+.intro-copy p.intro-festivo {
+  color: #ffd75e;
+}
+
 .intro-cta {
   background: transparent;
   border: 0;

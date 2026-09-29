@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
 import { DOCUMENTS, DOC_ASPECT, INTRO_SCREENS, type PortfolioDoc } from './portfolioData'
+import { cargaGithub, ctxIntro, fechaDeUrl, rellena, type Github } from './introData'
 import { loadBitmapFont, PixelText } from './bitmapFont.tsx'
 import { play, setMuted, startLoop, startMusic, stopLoop, stopMusic, unlockAudio } from './audio'
 import './App.css'
@@ -138,24 +139,18 @@ function BorderCast() {
   )
 }
 
-const MESES = [
-  'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
-  'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
-]
-
-/* en los textos de la intro se puede escribir {dia} y {mes} y se sustituyen
-   por el dia y el mes en el que se abre la pagina */
-function conFecha(texto: string) {
-  const hoy = new Date()
-  return texto
-    .replace(/\{dia\}/g, String(hoy.getDate()))
-    .replace(/\{mes\}/g, MESES[hoy.getMonth()])
-}
-
 function Intro({ onStart }: { onStart: () => void }) {
   const [index, setIndex] = useState(0)
+  const [github, setGithub] = useState<Github | null>(null)
+  const ctx = useMemo(() => ctxIntro(fechaDeUrl()), [])
   const screen = INTRO_SCREENS[index]
   const isLast = index === INTRO_SCREENS.length - 1
+
+  useEffect(() => {
+    let vivo = true
+    cargaGithub().then((datos) => { if (vivo) setGithub(datos) })
+    return () => { vivo = false }
+  }, [])
 
   useEffect(() => {
     if (index === 0) {
@@ -164,13 +159,21 @@ function Intro({ onStart }: { onStart: () => void }) {
     }
   }, [index])
 
+  const lineas = [
+    ...screen.lines,
+    ...(ctx.festivo && screen.festivo ? screen.festivo : []),
+  ]
+
   return (
     <div className="intro" onPointerEnter={unlockAudio} onPointerDown={unlockAudio}>
       <div className="intro-screen" key={index}>
-        <img className="intro-art" src={screen.image} alt={conFecha(screen.alt)} />
-        {screen.lines.length > 0 && (
+        <img className="intro-art" src={screen.image} alt={rellena(screen.alt, ctx, github)} />
+        {lineas.length > 0 && (
           <div className="intro-copy">
-            {screen.lines.map((line) => <p key={line}>{conFecha(line)}</p>)}
+            {screen.lines.map((line) => <p key={line}>{rellena(line, ctx, github)}</p>)}
+            {ctx.festivo && screen.festivo?.map((line) => (
+              <p key={line} className="intro-festivo">{rellena(line, ctx, github)}</p>
+            ))}
           </div>
         )}
       </div>
@@ -749,3 +752,4 @@ function App() {
 }
 
 export default App
+
