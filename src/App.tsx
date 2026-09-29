@@ -1,120 +1,116 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
-import { DOCUMENTS, INSPECTOR, INTRO_LINES, type PortfolioDoc } from './portfolioData'
+import { DOCUMENTS, INTRO_SCREENS, type PortfolioDoc } from './portfolioData'
+import { loadBitmapFont, PixelText } from './bitmapFont.tsx'
+import { play, setMuted, startLoop, stopLoop, unlockAudio } from './audio'
 import './App.css'
 
-const STAGE_W = 1140
-const STAGE_H = 640
-const TOPBAR_H = 44
-const BOTBAR_H = 30
-const DESK_H = STAGE_H - TOPBAR_H - BOTBAR_H
-const LEFT_W = 300
-const STACK_W = 190
-const SURFACE_W = STAGE_W - LEFT_W - STACK_W
-const TOOLBAR_H = 78
-const MOVE_H = DESK_H - TOOLBAR_H
-const PAPER_W = 300
+const W = 570
+const H = 320
+const CHECKPOINT_H = 103
+const DESK_Y = CHECKPOINT_H
+const WALL_W = 178
+const PAPER_MAX_W = 150
+const PAPER_MAX_H = 165
+const STAMP_RATIO = 0.62
 
-type StampKind = 'approved' | 'denied' | 'reason'
+type StampKind = 'approved' | 'denied'
 
 interface PlacedStamp {
   id: number
   kind: StampKind
   rot: number
-  offset: number
+  x: number
+  y: number
+  fresh: boolean
 }
 
+type Mode =
+  | { type: 'carry'; kind: StampKind }
+  | { type: 'dragStamp'; id: number; dx: number; dy: number }
+  | null
+
 const INK: Record<StampKind, string> = {
-  approved: '/assets/InkApproved.png',
-  denied: '/assets/InkDenied.png',
-  reason: '/assets/InkReason.png',
+  approved: '/assets-english/InkApproved.png',
+  denied: '/assets-english/InkDenied.png',
+}
+
+const STAMP_TOOL: Record<StampKind, string> = {
+  approved: '/assets-english/StampBotApproved.png',
+  denied: '/assets-english/StampBotDenied.png',
 }
 
 const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max)
 
-function InspectorPanel() {
-  return (
-    <aside className="booth" aria-label="Puesto de inspección">
-      <div className="booth-portrait">
-        <div className="height-chart" aria-hidden="true">
-          <span>1.9</span>
-          <span>1.8</span>
-          <span>1.7</span>
-          <span>1.6</span>
-          <span>1.5</span>
-        </div>
-        <div className="mugshot" role="img" aria-label={`Retrato de ${INSPECTOR.name}`}>
-          <div className="mugshot-grid" />
-          <div className="face">
-            <div className="cap" />
-            <div className="head">
-              <div className="eye left" />
-              <div className="eye right" />
-              <div className="brow" />
-              <div className="nose" />
-              <div className="mouth" />
-            </div>
-            <div className="neck" />
-            <div className="shoulders" />
-          </div>
-        </div>
-        <div className="booth-name">{INSPECTOR.name}</div>
-      </div>
-
-      <div className="booth-tools" aria-hidden="true">
-        <img src="/assets/SearchButton.png" alt="" />
-        <img src="/assets/FingerprintButton.png" alt="" />
-        <img src="/assets/DetainButton.png" alt="" />
-      </div>
-
-      <div className="booth-desk">
-        <div className="booth-date">25.11.82</div>
-        <img className="booth-filer" src="/assets/Filer.png" alt="" />
-        <div className="booth-weight">87<span>kg</span></div>
-      </div>
-    </aside>
-  )
-}
+/* sprite sheet: sheet, frame count, frame width, frame height, row, duration */
 
 function Intro({ onStart }: { onStart: () => void }) {
+  const [index, setIndex] = useState(0)
+  const screen = INTRO_SCREENS[index]
+  const isLast = index === INTRO_SCREENS.length - 1
+
+  useEffect(() => {
+    if (index === 0) {
+      play('intro', 'shutter', { volume: 0.45 })
+      play('intro', 'start', { volume: 0.4 })
+    }
+  }, [index])
+
   return (
-    <div className="intro">
-      <div className="intro-inner">
-        <img className="intro-emblem" src="/assets/intro/Intro1.png" alt="" />
-        <img className="intro-title" src="/assets/intro/Shutter.png" alt="" />
-        <div className="intro-letter">
-          {INTRO_LINES.map((line) => (
-            <p key={line}>{line}</p>
-          ))}
-        </div>
-        <div className="intro-signature">
-          <span>M.D.A.</span>
-          <img src="/assets/intro/Obrinspector.png" alt="" />
-        </div>
-        <button type="button" className="intro-start" onClick={onStart}>
-          <img src="/assets/StampBotApproved.png" alt="" />
-          <b>COMENZAR TURNO</b>
-        </button>
+    <div className="intro" onPointerEnter={unlockAudio}>
+      <div className="intro-screen" key={index}>
+        <img className="intro-art" src={screen.image} alt={screen.alt} />
+        {screen.lines.length > 0 && (
+          <div className="intro-copy">
+            {screen.lines.map((line) => <p key={line}>{line}</p>)}
+          </div>
+        )}
       </div>
+      <button
+        type="button"
+        className="intro-cta"
+        onClick={() => {
+          play('button', 'down', { volume: 0.4 })
+          if (isLast) onStart()
+          else setIndex((value) => value + 1)
+        }}
+      >
+        {screen.cta}
+      </button>
     </div>
   )
 }
 
 function App() {
   const [started, setStarted] = useState(false)
-  const [scale, setScale] = useState(1)
-  const [stack, setStack] = useState<PortfolioDoc[]>(DOCUMENTS)
+  const [shutter, setShutter] = useState(true)
+  const [frame, setFrame] = useState({ scale: 1, x: 0, y: 0 })
+  const [roster, setRoster] = useState<PortfolioDoc[]>(DOCUMENTS)
   const [placed, setPlaced] = useState<PortfolioDoc | null>(null)
   const [position, setPosition] = useState({ x: 0, y: 0 })
   const [stamps, setStamps] = useState<PlacedStamp[]>([])
   const [aspects, setAspects] = useState<Record<string, number>>({})
-  const [selected, setSelected] = useState<string | null>(null)
-  const dragRef = useRef<{ dx: number; dy: number } | null>(null)
+  const [mode, setMode] = useState<Mode>(null)
+  const [cursor, setCursor] = useState({ x: 0, y: 0 })
+  const [muted, setMutedState] = useState(false)
+  const paperRef = useRef<HTMLDivElement>(null)
+  const deskRef = useRef<HTMLDivElement>(null)
+  const paperDrag = useRef<{ dx: number; dy: number } | null>(null)
   const stampId = useRef(0)
+
+  useEffect(() => { loadBitmapFont('/assets-english/fonts/atarismall_u_regular_8.png') }, [])
 
   useEffect(() => {
     const fit = () => {
-      const raw = Math.min(window.innerWidth / STAGE_W, window.innerHeight / STAGE_H)
-      setScale(raw >= 1 ? Math.floor(raw) : raw)
+      const rawX = window.innerWidth / W
+      const rawY = window.innerHeight / H
+      const fitScale = Math.min(rawX, rawY)
+      const integer = Math.floor(fitScale)
+      const scale = integer >= 1 ? integer : fitScale
+      setFrame({
+        scale,
+        x: Math.round((window.innerWidth - W * scale) / 2),
+        y: Math.round((window.innerHeight - H * scale) / 2),
+      })
     }
     fit()
     window.addEventListener('resize', fit)
@@ -132,210 +128,297 @@ function App() {
       }
       image.src = doc.image
     })
-    return () => {
-      cancelled = true
-    }
+    return () => { cancelled = true }
   }, [])
 
-  const paperSize = useMemo(() => {
-    const ratio = placed ? aspects[placed.id] : undefined
-    if (!placed || !ratio) return { width: PAPER_W, height: PAPER_W }
-    return { width: PAPER_W, height: Math.round(PAPER_W / ratio) }
-  }, [placed, aspects])
+  useEffect(() => {
+    const block = (event: Event) => event.preventDefault()
+    document.addEventListener('dragstart', block)
+    return () => document.removeEventListener('dragstart', block)
+  }, [])
+
+  useEffect(() => {
+    if (!started) { stopLoop(); return }
+    unlockAudio()
+    play('intro', 'curtain', { volume: 0.5 })
+    play('intro', 'shutter', { volume: 0.5 })
+    startLoop('ambient.desk', 0.2)
+    const id = window.setTimeout(() => setShutter(false), 700)
+    return () => { window.clearTimeout(id); stopLoop() }
+  }, [started])
+
+  useEffect(() => {
+    if (!mode) return
+    const onMove = (event: PointerEvent) => {
+      setCursor({ x: event.clientX, y: event.clientY })
+      if (mode.type === 'dragStamp') {
+        const rect = paperRef.current?.getBoundingClientRect()
+        if (!rect) return
+        const sw = rect.width * STAMP_RATIO
+        setStamps((current) => current.map((stamp) => (
+          stamp.id === mode.id
+            ? {
+              ...stamp,
+              x: clamp(event.clientX - rect.left - mode.dx, 0, rect.width - sw),
+              y: clamp(event.clientY - rect.top - mode.dy, 0, rect.height - 10),
+            }
+            : stamp
+        )))
+      }
+    }
+    const onUp = (event: PointerEvent) => {
+      if (mode.type === 'carry') {
+        const rect = paperRef.current?.getBoundingClientRect()
+        if (rect) {
+          const sw = rect.width * STAMP_RATIO
+          const id = stampId.current++
+          setStamps((current) => [
+            ...current,
+            {
+              id,
+              kind: mode.kind,
+              rot: -12 + Math.round(Math.random() * 18),
+              x: clamp(event.clientX - rect.left - sw / 2, 0, rect.width - sw),
+              y: clamp(event.clientY - rect.top - 6, 0, rect.height - 10),
+              fresh: true,
+            },
+          ])
+          play('stamp', 'down', { volume: 0.55 })
+        }
+      }
+      setMode(null)
+    }
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointerup', onUp)
+    return () => {
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
+    }
+  }, [mode])
+
+  const fitPaper = useCallback((doc: PortfolioDoc) => {
+    const ratio = aspects[doc.id] ?? 0.8
+    const natural = doc.native
+    const naturalH = natural / ratio
+    const scale = Math.min(PAPER_MAX_W / natural, PAPER_MAX_H / naturalH)
+    return { width: Math.round(natural * scale), height: Math.round(naturalH * scale) }
+  }, [aspects])
 
   const placeDocument = useCallback((doc: PortfolioDoc) => {
-    const ratio = aspects[doc.id] ?? 0.8
-    const width = PAPER_W
-    const height = Math.round(PAPER_W / ratio)
+    const size = fitPaper(doc)
     setPlaced(doc)
     setStamps([])
-    setSelected(doc.id)
-    setStack((current) => current.filter((item) => item.id !== doc.id))
-    setPosition({
-      x: Math.round((SURFACE_W - width) / 2),
-      y: Math.round((MOVE_H - height) / 2),
-    })
-  }, [aspects])
+    setRoster((current) => current.filter((item) => item.id !== doc.id))
+    setPosition({ x: 330 - size.width / 2, y: 235 - size.height / 2 })
+    play('paper', 'drop', { volume: 0.5 })
+  }, [fitPaper])
 
   const returnDocument = useCallback(() => {
     if (!placed) return
-    setStack((current) => [...current, placed])
+    setRoster((current) => [placed, ...current])
     setPlaced(null)
     setStamps([])
-    setSelected(null)
+    play('filer', 'open', { volume: 0.4 })
   }, [placed])
 
-  const applyStamp = useCallback((kind: StampKind) => {
-    if (!placed) return
-    const id = stampId.current++
-    const rotation = -14 + Math.round(Math.random() * 22)
-    setStamps((current) => [...current, { id, kind, rot: rotation, offset: current.length * 14 }])
-  }, [placed])
-
-  const handlePointerDown = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
-    if (!placed) return
-    event.currentTarget.setPointerCapture(event.pointerId)
-    const bounds = event.currentTarget.parentElement?.getBoundingClientRect()
-    if (!bounds) return
-    const scaleX = bounds.width / SURFACE_W
-    const scaleY = bounds.height / MOVE_H
-    dragRef.current = {
-      dx: (event.clientX - bounds.left) / scaleX - position.x,
-      dy: (event.clientY - bounds.top) / scaleY - position.y,
+  const handlePaperDown = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
+    if (!placed || mode) return
+    if (event.button !== 0) return
+    event.preventDefault()
+    play('paper', 'grab', { volume: 0.4 })
+    const rect = paperRef.current?.getBoundingClientRect()
+    if (!rect) return
+    paperDrag.current = {
+      dx: event.clientX - rect.left,
+      dy: event.clientY - rect.top,
     }
-  }, [placed, position])
+  }, [placed, mode])
 
-  const handlePointerMove = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
-    if (!dragRef.current || !placed) return
-    const bounds = event.currentTarget.parentElement?.getBoundingClientRect()
-    if (!bounds) return
-    const scaleX = bounds.width / SURFACE_W
-    const scaleY = bounds.height / MOVE_H
-    const x = (event.clientX - bounds.left) / scaleX - dragRef.current.dx
-    const y = (event.clientY - bounds.top) / scaleY - dragRef.current.dy
+  const handlePaperMove = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
+    if (!paperDrag.current || !placed) return
+    const rect = deskRef.current?.getBoundingClientRect()
+    if (!rect) return
+    const sx = rect.width / (W - WALL_W)
+    const sy = rect.height / (H - DESK_Y)
+    const size = fitPaper(placed)
     setPosition({
-      x: clamp(x, 6, SURFACE_W - paperSize.width - 6),
-      y: clamp(y, 6, MOVE_H - paperSize.height - 6),
+      x: clamp((event.clientX - rect.left) / sx - paperDrag.current.dx, 0, (W - WALL_W) - size.width),
+      y: clamp((event.clientY - rect.top) / sy - paperDrag.current.dy, 0, (H - DESK_Y) - size.height),
     })
-  }, [placed, paperSize])
+  }, [placed, fitPaper])
 
-  const handlePointerUp = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
-    dragRef.current = null
-    event.currentTarget.releasePointerCapture?.(event.pointerId)
+  const endPaperDrag = useCallback(() => {
+    if (!paperDrag.current) return
+    paperDrag.current = null
+    play('paper', 'release', { volume: 0.4 })
   }, [])
+
+  const toggleMute = useCallback(() => {
+    setMutedState((value) => {
+      const next = !value
+      setMuted(next)
+      if (!next) startLoop('ambient.desk', 0.2)
+      return next
+    })
+  }, [])
+
+  const paperSize = useMemo(() => (placed ? fitPaper(placed) : { width: PAPER_MAX_W, height: PAPER_MAX_H }), [placed, fitPaper])
+  const fieldScale = placed ? (paperSize.width / placed.native) : 1
 
   if (!started) return <Intro onStart={() => setStarted(true)} />
 
   return (
     <div className="viewport">
-      <div className="stage" style={{ transform: `scale(${scale})` }}>
-        <header className="topbar" style={{ height: TOPBAR_H }}>
-          <div className="brand">
-            ARSTOTZKA
-            <span>DEPARTMENT OF LABOR</span>
-          </div>
-          <div className="shift">
-            25.11.82
-            <span>SHIFT 01</span>
-          </div>
-          <div className="ministry-seal">M.D.A.</div>
-        </header>
+      <div className="bleed" />
+      <div className="stage" style={{ transform: `translate(${frame.x}px, ${frame.y}px) scale(${frame.scale})` }}>
 
-        <div className="desk" style={{ height: DESK_H }}>
-          <InspectorPanel />
-
-          <section className="archive" style={{ width: STACK_W }} aria-label="Archivo de entrada">
-            <div className="archive-title">ARCHIVO DE ENTRADA</div>
-            <div className="archive-slots">
-              {stack.map((doc) => (
-                <button
-                  type="button"
-                  key={doc.id}
-                  className="archive-slot"
-                  onClick={() => placeDocument(doc)}
-                  aria-label={`Inspeccionar ${doc.title}`}
-                >
-                  <img src={doc.image} alt="" />
-                  <span>{doc.short}</span>
-                </button>
-              ))}
-              {stack.length === 0 && <div className="archive-empty">ARCHIVO VACÍO</div>}
-            </div>
-          </section>
-
-          <section className="surface" style={{ width: SURFACE_W }} aria-label="Zona de inspección">
-            <div
-              className="surface-move"
-              style={{ height: MOVE_H }}
-              onPointerMove={handlePointerMove}
-              onPointerUp={handlePointerUp}
-              onPointerCancel={handlePointerUp}
-            >
-              <div className="drag-hint">ARRASTRE LOS DOCUMENTOS AQUÍ</div>
-
-              {placed && (
-                <div
-                  className={`paper${stamps.length ? ' stamped' : ''}`}
-                  style={{
-                    width: paperSize.width,
-                    height: paperSize.height,
-                    transform: `translate3d(${position.x}px, ${position.y}px, 0)`,
-                  }}
-                  onPointerDown={handlePointerDown}
-                  role="group"
-                  aria-label={`${placed.title} sobre la mesa`}
-                >
-                  <img className="paper-sheet" src={placed.image} alt={placed.title} />
-                  {placed.fields.map((field, index) => (
-                    <span
-                      key={index}
-                      className={field.panel ? 'field panel' : 'field'}
-                      style={{
-                        left: `${field.x}%`,
-                        top: `${field.y}%`,
-                        width: field.w ? `${field.w}%` : undefined,
-                        height: field.h ? `${field.h}%` : undefined,
-                        fontSize: field.size ? `${field.size}px` : undefined,
-                        textAlign: field.align,
-                        fontWeight: field.bold ? 700 : 400,
-                        color: field.color,
-                        background: field.bg,
-                      }}
-                      aria-hidden="true"
-                    >
-                      {field.t}
-                    </span>
-                  ))}
-                  {stamps.map((stamp) => (
-                    <img
-                      key={stamp.id}
-                      className="ink"
-                      src={INK[stamp.kind]}
-                      alt=""
-                      style={{ ['--stamp-rot' as string]: `${stamp.rot}deg`, ['--stamp-drop' as string]: `${stamp.offset}px` }}
-                    />
-                  ))}
-                </div>
-              )}
-
-              {placed && (
-                <div className="paper-caption" style={{ left: clamp(position.x, 8, SURFACE_W - 320) }}>
-                  <b>{placed.short}</b>
-                  <span>{placed.subtitle}</span>
-                </div>
-              )}
-            </div>
-
-            <div className="toolbar" style={{ height: TOOLBAR_H }}>
-              <img className="toolbar-bar" src="/assets/StampBarMid.png" alt="" />
-              <div className="toolbar-actions">
-                <button type="button" onClick={() => applyStamp('denied')} disabled={!placed} title="DENEGAR">
-                  <img src="/assets/StampBotDenied.png" alt="Denegar" />
-                </button>
-                <button type="button" onClick={() => applyStamp('approved')} disabled={!placed} title="APROBAR">
-                  <img src="/assets/StampBotApproved.png" alt="Aprobar" />
-                </button>
-                <button type="button" className="reason" disabled title="RAZÓN">
-                  <img src="/assets/ReasonButton.png" alt="Razón" />
-                </button>
-                <button type="button" className="give" onClick={returnDocument} disabled={!placed} title="ENTREGAR">
-                  <img src="/assets/GiveIcon.png" alt="Entregar" />
-                </button>
-              </div>
-            </div>
-          </section>
+        <div className="outside">
+          <img className="checkpoint" src="/assets-english/CheckpointBack.png" alt="" draggable={false} />
         </div>
 
-        <footer className="botbar" style={{ height: BOTBAR_H }}>
-          <div className="botbar-case">
-            CASO {String(DOCUMENTS.length - stack.length + (placed ? 0 : 1)).padStart(2, '0')} / {String(DOCUMENTS.length).padStart(2, '0')}
+        <div className="desk" ref={deskRef} onPointerMove={handlePaperMove} onPointerUp={endPaperDrag}>
+          <img className="desk-sprite" src="/assets-english/Desk.png" alt="" draggable={false} />
+
+          <div className="wall">
+            <img className="wall-sprite" src="/assets-english/BoothWall.png" alt="" draggable={false} />
+            <img className="mugshot" src="/assets/avatar.png" alt="Retrato" draggable={false} />
           </div>
-          <div className="botbar-status">
-            {placed ? `${placed.short} // ${placed.subtitle}` : 'ESPERANDO DOCUMENTACIÓN'}
+
+          <div className="console">
+            <PixelText className="console-date" text="25.11.82" x={4} y={118} color="#d8d2b4" />
+            <PixelText className="console-weight" text="87 KG" x={WALL_W - 4} y={118} color="#d8d2b4" align="right" />
           </div>
-          <div className="botbar-hint">{selected ? 'ARRASTRE EL PAPEL PARA MOVERLO' : 'SELECCIONE UN DOCUMENTO DEL ARCHIVO'}</div>
-        </footer>
+
+          <div className="stampbar">
+            <img className="stampbar-frame" src="/assets-english/StampBarTop.png" alt="" draggable={false} />
+            <div className="stampbar-slots">
+              <button type="button" className="stamp-slot" onPointerDown={() => { play('button', 'down', { volume: 0.45 }); play('metal', 'grab', { volume: 0.4 }); setMode({ type: 'carry', kind: 'denied' }) }} disabled={!placed} title="DENEGAR">
+                <img src={STAMP_TOOL.denied} alt="Denegar" draggable={false} />
+              </button>
+              <button type="button" className="stamp-slot" onPointerDown={() => { play('button', 'down', { volume: 0.45 }); play('metal', 'grab', { volume: 0.4 }); setMode({ type: 'carry', kind: 'approved' }) }} disabled={!placed} title="APROBAR">
+                <img src={STAMP_TOOL.approved} alt="Aprobar" draggable={false} />
+              </button>
+            </div>
+            <img className="stampbar-mid" src="/assets-english/StampBarMid.png" alt="" draggable={false} />
+            <img className="stampbar-bot" src="/assets-english/StampBarBot.png" alt="" draggable={false} />
+          </div>
+
+          <div className="tray">
+            {roster.map((doc, index) => (
+              <button
+                type="button"
+                key={doc.id}
+                className="tray-doc"
+                style={{ left: `${6 + index * 27}px` }}
+                onClick={() => placeDocument(doc)}
+                onPointerDown={() => play('inspect', 'highlight', { volume: 0.3 })}
+                title={doc.title}
+                aria-label={`Inspeccionar ${doc.title}`}
+              >
+                <img src={doc.image} alt="" draggable={false} />
+              </button>
+            ))}
+            <button type="button" className="tray-give" onClick={returnDocument} disabled={!placed} title="Entregar">
+              <img src="/assets/GiveIcon.png" alt="Entregar" draggable={false} />
+            </button>
+          </div>
+
+          {placed && (
+            <div
+              className="paper"
+              ref={paperRef}
+              key={placed.id}
+              style={{
+                width: paperSize.width,
+                height: paperSize.height,
+                transform: `translate3d(${WALL_W + position.x}px, ${DESK_Y + position.y}px, 0)`,
+              }}
+              onPointerDown={handlePaperDown}
+              role="group"
+              aria-label={placed.title}
+            >
+              <img className="paper-sheet" src={placed.image} alt={placed.title} draggable={false} />
+              {placed.photo && (
+                <span
+                  className="doc-photo"
+                  style={{
+                    left: `${placed.photo.x}%`,
+                    top: `${placed.photo.y}%`,
+                    width: `${placed.photo.w}%`,
+                    height: `${placed.photo.h}%`,
+                    background: placed.photo.tint,
+                    mixBlendMode: 'multiply',
+                  }}
+                  aria-hidden="true"
+                >
+                  <img src="/assets/avatar.png" alt="" draggable={false} />
+                </span>
+              )}
+              {placed.fields.map((field, index) => (
+                <span
+                  key={index}
+                  className={field.panel ? 'field panel' : 'field'}
+                  style={{
+                    left: `${field.x}%`,
+                    top: `${field.y}%`,
+                    width: field.w ? `${field.w}%` : undefined,
+                    height: field.h ? `${field.h}%` : undefined,
+                    fontSize: field.size ? `${field.size * fieldScale * 1.6}px` : undefined,
+                    textAlign: field.align,
+                    fontWeight: field.bold ? 700 : 400,
+                    color: field.color,
+                    background: field.bg,
+                  }}
+                  aria-hidden="true"
+                >
+                  {field.t}
+                </span>
+              ))}
+              {stamps.map((stamp) => (
+                <div
+                  key={stamp.id}
+                  className={`ink${stamp.fresh ? ' fresh' : ''}`}
+                  style={{ left: `${stamp.x}px`, top: `${stamp.y}px`, width: `${STAMP_RATIO * 100}%` }}
+                  onPointerDown={(event) => {
+                    event.stopPropagation()
+                    const rect = paperRef.current?.getBoundingClientRect()
+                    if (!rect) return
+                    setMode({ type: 'dragStamp', id: stamp.id, dx: event.clientX - rect.left - stamp.x, dy: event.clientY - rect.top - stamp.y })
+                  }}
+                >
+                  <img src={INK[stamp.kind]} alt="" draggable={false} style={{ transform: `rotate(${stamp.rot}deg)` }} />
+                </div>
+              ))}
+            </div>
+          )}
+
+          {shutter && (
+            <img
+              className="shutter-sprite"
+              src="/assets-english/Shutter.png"
+              alt=""
+              draggable={false}
+              onAnimationEnd={() => setShutter(false)}
+            />
+          )}
+
+          <button type="button" className="sound" onClick={toggleMute} title="Sonido (M)">
+            {muted ? 'MUTE' : 'SND'}
+          </button>
+        </div>
+
+        <PixelText className="hint" text={placed ? '' : 'ARRASTRE DOCUMENTOS AQUI'} x={420} y={302} color="#4c5251" align="center" />
       </div>
+
+      {mode?.type === 'carry' && (
+        <img
+          className="carried"
+          src={INK[mode.kind]}
+          alt=""
+          style={{ left: cursor.x, top: cursor.y }}
+          draggable={false}
+        />
+      )}
     </div>
   )
 }

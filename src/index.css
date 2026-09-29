@@ -10,18 +10,37 @@ body,
   height: 100%;
 }
 
+@font-face {
+  font-family: 'PixelUI';
+  src: url('/fonts/PressStart2P-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: block;
+}
+
+@font-face {
+  font-family: 'PixelDoc';
+  src: url('/fonts/VT323-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: block;
+}
+
 body {
   background: #08090a;
-  font-family: 'Courier New', Courier, monospace;
+  font-family: 'PixelUI', 'Courier New', monospace;
   color: #c9c4b2;
   overflow: hidden;
   -webkit-font-smoothing: none;
   font-smooth: never;
 }
 
+
+
 img {
   image-rendering: pixelated;
   image-rendering: crisp-edges;
   -webkit-user-drag: none;
   user-select: none;
+  pointer-events: none;
 }
