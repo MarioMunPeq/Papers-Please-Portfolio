@@ -210,7 +210,7 @@ canvas {
   cursor: grab;
 }
 
-.stamp-slot.denied { left: 33px; }
+.stamp-slot.denied { left: 45px; }
 .stamp-slot.approved { left: 173px; }
 
 .stamp-slot:disabled {
@@ -322,17 +322,19 @@ canvas {
   filter: brightness(1.22);
 }
 
+/* esquina inferior derecha del escritorio */
 .tray-give {
   position: absolute;
-  left: 112px;
-  top: 190px;
+  right: 3px;
+  bottom: 3px;
   width: 60px;
-  height: 14px;
+  height: 15px;
   background: transparent;
   border: 0;
   padding: 0;
   cursor: pointer;
   pointer-events: auto;
+  z-index: 14;
 }
 
 .tray-give:disabled {
@@ -412,7 +414,7 @@ canvas {
 }
 
 .ink.fresh {
-  animation: stamp-in 0.22s steps(5) both;
+  animation: stamp-in 0.22s steps(5) backwards;
 }
 
 @keyframes stamp-in {
@@ -452,7 +454,7 @@ canvas {
 .sound {
   position: absolute;
   right: 4px;
-  bottom: 4px;
+  top: 4px;
   width: 30px;
   height: 14px;
   background: #1b1e1f;

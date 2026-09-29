@@ -22,6 +22,9 @@ const banks: Record<string, Bank> = {
     shutter: ['shutter-rise.wav'],
     curtain: ['curtain-open.wav'],
   },
+  music: {
+    theme: ['Theme-song.mp3'],
+  },
   drift: {
     truck: ['car-driveby.wav'],
     motor: ['motorbike-rev.wav'],
@@ -98,12 +101,56 @@ function pool(group: string, name: string): HTMLAudioElement[] {
 let loopInstance: HTMLAudioElement | null = null
 let loopName = ''
 
+/* la musica es una pista larga y no un efecto: instancia propia, sin loop,
+   no se reinicia en cada play() y se puede reanudar tras silenciar */
+let musicInstance: HTMLAudioElement | null = null
+let musicName = ''
+
+function tryPlayMusic() {
+  if (!musicInstance || muted || !unlocked) return
+  if (!musicInstance.paused) return
+  musicInstance.play().catch(() => undefined)
+}
+
+export function startMusic(name: string, volume = 0.32) {
+  if (musicName === name && musicInstance) {
+    tryPlayMusic()
+    return
+  }
+  stopMusic()
+
+  const [group, variant] = name.split('.')
+  const items = pool(group, variant)
+  if (items.length === 0) return
+
+  const audio = items[0]
+  audio.loop = false
+  audio.currentTime = 0
+  audio.volume = volume
+  musicInstance = audio
+  musicName = name
+  // tryPlayMusic respeta tanto el mute como el bloqueo de autoplay
+  tryPlayMusic()
+}
+
+export function stopMusic() {
+  if (musicInstance) {
+    musicInstance.pause()
+    musicInstance.currentTime = 0
+  }
+  musicInstance = null
+  musicName = ''
+}
+
 export function setMuted(value: boolean) {
   muted = value
   if (muted) {
     stopLoop()
+    musicInstance?.pause()
   } else {
     unlocked = true
+    if (loopName === 'ambient.desk') startLoop('ambient.desk')
+    tryPlayMusic()
   }
 }
 
@@ -113,9 +160,11 @@ export function isMuted() {
 
 export function unlockAudio() {
   unlocked = true
-  if (!muted && loopName === 'ambient.desk') {
+  if (muted) return
+  if (loopName === 'ambient.desk') {
     startLoop('ambient.desk')
   }
+  tryPlayMusic()
 }
 
 export function play(group: string, name: string, options?: { volume?: number; throttle?: number }) {

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
 import { DOCUMENTS, INTRO_SCREENS, type PortfolioDoc } from './portfolioData'
 import { loadBitmapFont, PixelText } from './bitmapFont.tsx'
-import { play, setMuted, startLoop, stopLoop, unlockAudio } from './audio'
+import { play, setMuted, startLoop, startMusic, stopLoop, stopMusic, unlockAudio } from './audio'
 import './App.css'
 
 const W = 570
@@ -9,8 +9,8 @@ const H = 320
 const CHECKPOINT_H = 103
 const DESK_Y = CHECKPOINT_H
 const WALL_W = 178
-const PAPER_MAX_W = 150
-const PAPER_MAX_H = 165
+const PAPER_MAX_W = 260
+const PAPER_MAX_H = 200
 const STAMP_RATIO = 0.62
 
 type StampKind = 'approved' | 'denied'
@@ -140,7 +140,7 @@ function Intro({ onStart }: { onStart: () => void }) {
   }, [index])
 
   return (
-    <div className="intro" onPointerEnter={unlockAudio}>
+    <div className="intro" onPointerEnter={unlockAudio} onPointerDown={unlockAudio}>
       <div className="intro-screen" key={index}>
         <img className="intro-art" src={screen.image} alt={screen.alt} />
         {screen.lines.length > 0 && (
@@ -184,6 +184,31 @@ function App() {
   const stampId = useRef(0)
 
   useEffect(() => { loadBitmapFont('/assets-english/fonts/atarismall_u_regular_8.png') }, [])
+
+
+  const fitPaper = useCallback((doc: PortfolioDoc) => {
+    const ratio = aspects[doc.id] ?? 0.8
+    const natural = doc.native
+    const naturalH = natural / ratio
+    // 1:1 como en el juego: nunca por encima del tamaño nativo
+    const scale = Math.min(1, PAPER_MAX_W / natural, PAPER_MAX_H / naturalH)
+    return { width: Math.round(natural * scale), height: Math.round(naturalH * scale) }
+  }, [aspects])
+
+  const paperSize = useMemo(
+    () => (placed ? fitPaper(placed) : { width: PAPER_MAX_W, height: PAPER_MAX_H }),
+    [placed, fitPaper],
+  )
+
+  /* convierte coordenadas de pantalla a pixeles locales del documento,
+     que es un elemento escalado por el escenario */
+  const toPaperSpace = useCallback((clientX: number, clientY: number) => {
+    const rect = paperRef.current?.getBoundingClientRect()
+    if (!rect) return null
+    const kx = paperSize.width ? rect.width / paperSize.width : 1
+    const ky = paperSize.height ? rect.height / paperSize.height : 1
+    return { x: (clientX - rect.left) / kx, y: (clientY - rect.top) / ky }
+  }, [paperSize])
 
   useEffect(() => {
     const fit = () => {
@@ -231,20 +256,26 @@ function App() {
     return () => { window.clearTimeout(id); stopLoop() }
   }, [started])
 
+  /* la tema suena durante toda la intro y se corta al empezar el turno */
+  useEffect(() => {
+    if (started) { stopMusic(); return }
+    startMusic('music.theme', 0.32)
+  }, [started, muted])
+
   useEffect(() => {
     if (!mode) return
     const onMove = (event: PointerEvent) => {
       setCursor({ x: event.clientX, y: event.clientY })
       if (mode.type === 'dragStamp') {
-        const rect = paperRef.current?.getBoundingClientRect()
-        if (!rect) return
-        const sw = rect.width * STAMP_RATIO
+        const local = toPaperSpace(event.clientX, event.clientY)
+        if (!local) return
+        const sw = paperSize.width * STAMP_RATIO
         setStamps((current) => current.map((stamp) => (
           stamp.id === mode.id
             ? {
               ...stamp,
-              x: clamp(event.clientX - rect.left - mode.dx, 0, rect.width - sw),
-              y: clamp(event.clientY - rect.top - mode.dy, 0, rect.height - 10),
+              x: clamp(local.x - mode.dx, 0, paperSize.width - sw),
+              y: clamp(local.y - mode.dy, 0, paperSize.height - 10),
             }
             : stamp
         )))
@@ -252,9 +283,9 @@ function App() {
     }
     const onUp = (event: PointerEvent) => {
       if (mode.type === 'carry') {
-        const rect = paperRef.current?.getBoundingClientRect()
-        if (rect) {
-          const sw = rect.width * STAMP_RATIO
+        const local = toPaperSpace(event.clientX, event.clientY)
+        if (local) {
+          const sw = paperSize.width * STAMP_RATIO
           const id = stampId.current++
           setStamps((current) => [
             ...current,
@@ -262,8 +293,8 @@ function App() {
               id,
               kind: mode.kind,
               rot: -12 + Math.round(Math.random() * 18),
-              x: clamp(event.clientX - rect.left - sw / 2, 0, rect.width - sw),
-              y: clamp(event.clientY - rect.top - 6, 0, rect.height - 10),
+              x: clamp(local.x - sw / 2, 0, paperSize.width - sw),
+              y: clamp(local.y - 6, 0, paperSize.height - 10),
               fresh: true,
             },
           ])
@@ -278,15 +309,7 @@ function App() {
       window.removeEventListener('pointermove', onMove)
       window.removeEventListener('pointerup', onUp)
     }
-  }, [mode])
-
-  const fitPaper = useCallback((doc: PortfolioDoc) => {
-    const ratio = aspects[doc.id] ?? 0.8
-    const natural = doc.native
-    const naturalH = natural / ratio
-    const scale = Math.min(PAPER_MAX_W / natural, PAPER_MAX_H / naturalH)
-    return { width: Math.round(natural * scale), height: Math.round(naturalH * scale) }
-  }, [aspects])
+  }, [mode, paperSize, toPaperSpace])
 
   const placeDocument = useCallback((doc: PortfolioDoc) => {
     const size = fitPaper(doc)
@@ -374,12 +397,12 @@ function App() {
     setMutedState((value) => {
       const next = !value
       setMuted(next)
-      if (!next) startLoop('ambient.desk', 0.2)
+      // durante la intro solo debe sonar la tema, no el ambiente del escritorio
+      if (!next && started) startLoop('ambient.desk', 0.2)
       return next
     })
-  }, [])
+  }, [started])
 
-  const paperSize = useMemo(() => (placed ? fitPaper(placed) : { width: PAPER_MAX_W, height: PAPER_MAX_H }), [placed, fitPaper])
   const fieldScale = placed ? (paperSize.width / placed.native) : 1
 
   if (!started) return <Intro onStart={() => setStarted(true)} />
@@ -449,10 +472,11 @@ function App() {
                 <img src={doc.image} alt="" draggable={false} />
               </button>
             ))}
-            <button type="button" className="tray-give" onClick={returnDocument} disabled={!placed} title="Entregar">
-              <img src="/assets/GiveIcon.png" alt="Entregar" draggable={false} />
-            </button>
           </div>
+
+          <button type="button" className="tray-give" onClick={returnDocument} disabled={!placed} title="Entregar">
+            <img src="/assets/GiveIcon.png" alt="Entregar" draggable={false} />
+          </button>
 
           {placed && (
             <div
@@ -512,9 +536,9 @@ function App() {
                   style={{ left: `${stamp.x}px`, top: `${stamp.y}px`, width: `${STAMP_RATIO * 100}%` }}
                   onPointerDown={(event) => {
                     event.stopPropagation()
-                    const rect = paperRef.current?.getBoundingClientRect()
-                    if (!rect) return
-                    setMode({ type: 'dragStamp', id: stamp.id, dx: event.clientX - rect.left - stamp.x, dy: event.clientY - rect.top - stamp.y })
+                    const local = toPaperSpace(event.clientX, event.clientY)
+                    if (!local) return
+                    setMode({ type: 'dragStamp', id: stamp.id, dx: local.x - stamp.x, dy: local.y - stamp.y })
                   }}
                 >
                   <img src={INK[stamp.kind]} alt="" draggable={false} style={{ transform: `rotate(${stamp.rot}deg)` }} />
