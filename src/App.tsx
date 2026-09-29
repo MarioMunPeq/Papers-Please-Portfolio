@@ -9,9 +9,14 @@ const H = 320
 const CHECKPOINT_H = 103
 const DESK_Y = CHECKPOINT_H
 const WALL_W = 178
-const PAPER_MAX_W = 260
-const PAPER_MAX_H = 200
-const STAMP_RATIO = 0.62
+const PAPER_MAX_W = 240
+const PAPER_MAX_H = 124
+const STAMP_RATIO = 0.34
+
+/* zona de la mesa donde se poseran los documentos, en coordenadas locales
+   del papel (su origen esta en el borde derecho de la pared, x = WALL_W):
+   por debajo de la barra de sellos y con margen al borde inferior */
+const SURFACE = { x: 4, y: 88, w: 384, h: 127 }
 
 type StampKind = 'approved' | 'denied'
 
@@ -26,7 +31,6 @@ interface PlacedStamp {
 
 type Mode =
   | { type: 'carry'; kind: StampKind }
-  | { type: 'dragStamp'; id: number; dx: number; dy: number }
   | null
 
 const INK: Record<StampKind, string> = {
@@ -40,8 +44,6 @@ const STAMP_TOOL: Record<StampKind, string> = {
 }
 
 const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max)
-
-const BUSTS = ['SheetM0p.png', 'SheetM1p.png', 'SheetM2p.png', 'SheetM3p.png', 'SheetM4p.png', 'SheetM5p.png', 'SheetM6p.png']
 
 const BORDER = '/assets-english/border'
 
@@ -112,21 +114,6 @@ function BorderCast() {
   )
 }
 
-function Entrant({ sheet, onDone }: { sheet: string; onDone: () => void }) {
-  useEffect(() => {
-    const end = window.setTimeout(onDone, 5200)
-    return () => window.clearTimeout(end)
-  }, [onDone])
-  return (
-    <div className="entrant">
-      <div
-        className="entrant-bust"
-        style={{ backgroundImage: `url(/assets-english/faces/${sheet})` }}
-      />
-    </div>
-  )
-}
-
 function Intro({ onStart }: { onStart: () => void }) {
   const [index, setIndex] = useState(0)
   const screen = INTRO_SCREENS[index]
@@ -167,8 +154,6 @@ function Intro({ onStart }: { onStart: () => void }) {
 function App() {
   const [started, setStarted] = useState(false)
   const [shutter, setShutter] = useState(true)
-  const [entrant, setEntrant] = useState<string | null>(null)
-  const [sirenOn, setSirenOn] = useState(false)
   const [frame, setFrame] = useState({ scale: 1, x: 0, y: 0, vw: 0, vh: 0 })
   const [roster, setRoster] = useState<PortfolioDoc[]>(DOCUMENTS)
   const [placed, setPlaced] = useState<PortfolioDoc | null>(null)
@@ -184,7 +169,6 @@ function App() {
   const stampId = useRef(0)
 
   useEffect(() => { loadBitmapFont('/assets-english/fonts/atarismall_u_regular_8.png') }, [])
-
 
   const fitPaper = useCallback((doc: PortfolioDoc) => {
     const ratio = aspects[doc.id] ?? 0.8
@@ -266,20 +250,6 @@ function App() {
     if (!mode) return
     const onMove = (event: PointerEvent) => {
       setCursor({ x: event.clientX, y: event.clientY })
-      if (mode.type === 'dragStamp') {
-        const local = toPaperSpace(event.clientX, event.clientY)
-        if (!local) return
-        const sw = paperSize.width * STAMP_RATIO
-        setStamps((current) => current.map((stamp) => (
-          stamp.id === mode.id
-            ? {
-              ...stamp,
-              x: clamp(local.x - mode.dx, 0, paperSize.width - sw),
-              y: clamp(local.y - mode.dy, 0, paperSize.height - 10),
-            }
-            : stamp
-        )))
-      }
     }
     const onUp = (event: PointerEvent) => {
       if (mode.type === 'carry') {
@@ -317,23 +287,16 @@ function App() {
     setStamps([])
     setRoster((current) => current.filter((item) => item.id !== doc.id))
     setPosition({
-      x: Math.round((W - WALL_W - size.width) / 2),
-      y: Math.round((H - DESK_Y - size.height) / 2),
+      x: Math.round(SURFACE.x + (SURFACE.w - size.width) / 2),
+      y: Math.round(SURFACE.y + (SURFACE.h - size.height) / 2),
     })
     play('paper', 'drop', { volume: 0.5 })
   }, [fitPaper])
 
+  /* la bocina solo avisa: suena el anuncio y no cambia nada en pantalla */
   const callEntrant = useCallback(() => {
-    if (entrant) return
-    const pick = BUSTS[Math.floor(Math.random() * BUSTS.length)]
-    setSirenOn(true)
-    play('border', 'foghorn', { volume: 0.5 })
-    window.setTimeout(() => {
-      setEntrant(pick)
-      play('traveler', 'walkin', { volume: 0.45 })
-    }, 260)
-    window.setTimeout(() => setSirenOn(false), 700)
-  }, [entrant])
+    play('speech', 'announce', { volume: 0.55 })
+  }, [])
 
   const returnDocument = useCallback(() => {
     if (!placed) return
@@ -419,16 +382,18 @@ function App() {
         <div className="outside">
           <img className="checkpoint" src="/assets-english/CheckpointBack.png" alt="" draggable={false} />
           <BorderCast />
-          {entrant && <Entrant sheet={entrant} onDone={() => setEntrant(null)} />}
         </div>
 
         <button
           type="button"
-          className={`siren${sirenOn ? ' is-on' : ''}`}
+          className="siren"
           onClick={callEntrant}
           title="LLAMAR AL SIGUIENTE"
           aria-label="Llamar al siguiente solicitante"
-        />
+        >
+          <span className="siren-off" />
+          <span className="siren-on" />
+        </button>
 
         <div className="desk" ref={deskRef}>
           <img className="desk-sprite" src="/assets-english/Desk.png" alt="" draggable={false} />
@@ -463,7 +428,7 @@ function App() {
                 type="button"
                 key={doc.id}
                 className="tray-doc"
-                style={{ left: `${5 + index * 23}px` }}
+                style={{ left: `${3 + index * 21}px` }}
                 onClick={() => placeDocument(doc)}
                 onPointerDown={() => play('inspect', 'highlight', { volume: 0.3 })}
                 title={doc.title}
@@ -534,12 +499,6 @@ function App() {
                   key={stamp.id}
                   className={`ink${stamp.fresh ? ' fresh' : ''}`}
                   style={{ left: `${stamp.x}px`, top: `${stamp.y}px`, width: `${STAMP_RATIO * 100}%` }}
-                  onPointerDown={(event) => {
-                    event.stopPropagation()
-                    const local = toPaperSpace(event.clientX, event.clientY)
-                    if (!local) return
-                    setMode({ type: 'dragStamp', id: stamp.id, dx: local.x - stamp.x, dy: local.y - stamp.y })
-                  }}
                 >
                   <img src={INK[stamp.kind]} alt="" draggable={false} style={{ transform: `rotate(${stamp.rot}deg)` }} />
                 </div>

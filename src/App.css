@@ -241,51 +241,62 @@ canvas {
   height: 20px;
 }
 
-/* ---------- entrant (solicitante) ---------- */
-.entrant {
-  position: absolute;
-  left: 186px;
-  top: 6px;
-  width: 34px;
-  height: 44px;
-  z-index: 11;
-  border: 2px solid #2b2b2b;
-  background: #4a3b3b;
-  animation: entrant-in 5s steps(28) both;
-}
-
-.entrant-bust {
-  width: 100%;
-  height: 100%;
-  background-size: 400% 200%;
-  background-position: 0 0;
-  background-repeat: no-repeat;
-  image-rendering: pixelated;
-}
-
-@keyframes entrant-in {
-  from { transform: translateX(0); }
-  to { transform: translateX(300px); }
-}
-
-/* ---------- siren (hit area sobre la cabina existente) ---------- */
+/* ---------- sirena ----------
+   OuterBooth.png (56x76) trae dos cajas apiladas: la de arriba con la
+   bocina (y 0-25) y la de abajo con el anillo blanco (y 38-63).
+   Las dos se dibujan en el MISMO sitio, encima de la cabina del fondo,
+   y al pasar el raton se cambia una por otra. Se recorta la sprite con
+   background-position para no tener que generar ficheros. */
 .siren {
   position: absolute;
-  left: 144px;
+  left: 147px;
   top: 61px;
-  width: 38px;
-  height: 38px;
+  width: 56px;
+  height: 26px;
   padding: 0;
   background: transparent;
   border: 0;
   cursor: pointer;
   z-index: 12;
+  outline: none;
 }
 
-.siren:hover,
-.siren.is-on {
-  background: rgba(214, 62, 44, 0.42);
-  box-shadow: 0 0 0 1px rgba(255, 132, 96, 0.55);
+/* el anillo de foco del navegador deformaba la caja de la sirena */
+.siren:focus,
+.siren:focus-visible {
+  outline: none;
+}
+
+.siren-off,
+.siren-on {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 56px;
+  height: 26px;
+  background-image: url('/assets-english/OuterBooth.png');
+  background-size: 56px 76px;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+}
+
+/* apagada: caja de arriba, la de la bocina */
+.siren-off {
+  background-position: 0 0;
+}
+
+/* encendida: caja de abajo, la del anillo blanco */
+.siren-on {
+  background-position: 0 -38px;
+  opacity: 0;
+}
+
+.siren:hover .siren-off {
+  opacity: 0;
+}
+
+.siren:hover .siren-on {
+  opacity: 1;
 }
 
 /* ---------- document tray (bottom-left desk) ---------- */
@@ -298,10 +309,12 @@ canvas {
   pointer-events: none;
 }
 
+/* 8 documentos caben en los 178px del escritorio: paso de 21px
+   (5 + 7*21 + 21 = 173) dejando margen a ambos lados */
 .tray-doc {
   position: absolute;
   top: 152px;
-  width: 22px;
+  width: 21px;
   height: 28px;
   padding: 0;
   background: transparent;
@@ -315,6 +328,9 @@ canvas {
   width: 100%;
   height: 100%;
   object-fit: contain;
+  /* alineados por la base: si no, cada documento queda a una altura
+     distinta por su proporción y parecen desordenados */
+  object-position: bottom center;
 }
 
 .tray-doc:hover {
@@ -403,8 +419,7 @@ canvas {
 
 .ink {
   position: absolute;
-  cursor: grab;
-  touch-action: none;
+  pointer-events: none;
 }
 
 .ink img {
