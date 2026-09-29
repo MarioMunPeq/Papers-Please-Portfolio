@@ -717,3 +717,211 @@ canvas {
   border-color: #7e8a84;
   color: #d8d3c1;
 }
+
+/* ---------- boton de proyectos ----------
+   Va pegado a la barra de sellos, en la franja que el papel no alcanza:
+   el documento se ancla en x=178 y mide 240 de ancho, o sea que acaba en
+   418, y este boton empieza en 425. Asi siempre se puede pulsar. */
+.btn-proyectos {
+  position: absolute;
+  left: 425px;
+  top: 88px;
+  width: 140px;
+  height: 26px;
+  padding: 0;
+  background: #14181a;
+  border: 1px solid #4c5251;
+  color: #9aa39b;
+  font-family: 'PixelUI', monospace;
+  font-size: 9px;
+  letter-spacing: 1px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.btn-proyectos:hover,
+.btn-proyectos:focus-visible {
+  color: #e6e0cc;
+  border-color: #8d9890;
+  background: #1c2224;
+}
+
+/* ---------- panel de proyectos ----------
+   Ocupa el stage entero (570x320). La cabecera es ScreenHeader.png tal
+   cual: mide 570 de ancho, la medida exacta del stage. Su escudo ocupa
+   x 207-360, asi que el titulo se queda a la izquierda y la X a la
+   derecha, sin tocarlo. */
+.panel-proyectos {
+  position: absolute;
+  inset: 0;
+  z-index: 60;
+  background: #0d0f10;
+  color: #c9c4b2;
+}
+
+.panel-art {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 570px;
+  height: 54px;
+}
+
+.panel-titulo {
+  position: absolute;
+  left: 14px;
+  top: 17px;
+  margin: 0;
+  font-family: 'PixelUI', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: #cfcbba;
+}
+
+.panel-cerrar {
+  position: absolute;
+  right: 14px;
+  top: 10px;
+  width: 32px;
+  height: 22px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid #4c5251;
+  color: #8d9890;
+  font-family: 'PixelUI', monospace;
+  font-size: 9px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.panel-cerrar:hover,
+.panel-cerrar:focus-visible {
+  color: #e6e0cc;
+  border-color: #8d9890;
+}
+
+.panel-lista {
+  position: absolute;
+  left: 0;
+  top: 54px;
+  width: 570px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* 40 de placa + 1 de hueco: si no, las placas se empujan y parecen una sola
+   columna gris en vez de seis etiquetas de cajon */
+.panel-fila {
+  display: flex;
+  align-items: flex-start;
+  height: 41px;
+  width: 570px;
+}
+
+.panel-fila:hover {
+  background: #131719;
+}
+
+.panel-num {
+  width: 32px;
+  margin-left: 10px;
+  font-family: 'PixelDoc', monospace;
+  font-size: 12px;
+  line-height: 40px;
+  color: #55655e;
+}
+
+/* la placa es el recorte de la etiqueta del archivador (Filer.png va de
+   x 31-158 e y 136-175) y hace de cartel para el nombre del proyecto */
+.panel-placa {
+  position: relative;
+  width: 128px;
+  height: 40px;
+  flex: 0 0 auto;
+  background-image: url('/assets-english/Filer.png');
+  background-position: -31px -136px;
+  background-repeat: no-repeat;
+}
+
+.panel-nombre {
+  position: absolute;
+  left: 8px;
+  top: 5px;
+  font-family: 'PixelDoc', monospace;
+  font-size: 11px;
+  line-height: 13px;
+  color: #1d2022;
+  white-space: nowrap;
+}
+
+.panel-lenguaje {
+  position: absolute;
+  left: 8px;
+  top: 21px;
+  font-family: 'PixelDoc', monospace;
+  font-size: 9px;
+  line-height: 10px;
+  color: #4a4f52;
+  white-space: nowrap;
+}
+
+.panel-desc {
+  flex: 1 1 auto;
+  margin-left: 8px;
+  font-family: 'PixelDoc', monospace;
+  font-size: 10px;
+  line-height: 40px;
+  color: #8b958d;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.panel-btn {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 92px;
+  height: 22px;
+  text-decoration: none;
+  background: #14181a;
+  border: 1px solid #4c5251;
+  color: #9aa39b;
+  font-family: 'PixelUI', monospace;
+  font-size: 8px;
+  letter-spacing: 1px;
+  touch-action: manipulation;
+}
+
+.panel-btn:hover,
+.panel-btn:focus-visible {
+  color: #0d0f10;
+  background: #9aa39b;
+  border-color: #9aa39b;
+}
+
+.panel-btn:last-child {
+  width: 86px;
+  margin-right: 14px;
+  margin-left: 6px;
+}
+
+.panel-pie {
+  position: absolute;
+  left: 0;
+  top: 300px;
+  display: flex;
+  justify-content: space-between;
+  width: 570px;
+  margin: 0;
+  padding: 0 14px;
+  font-family: 'PixelDoc', monospace;
+  font-size: 10px;
+  color: #55655e;
+}
+
+.panel-esc {
+  color: #3f4a46;
+}

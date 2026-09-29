@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as
 import { DOCUMENTS, DOC_ASPECT, INTRO_SCREENS, type PortfolioDoc } from './portfolioData'
 import { cargaGithub, ctxIntro, fechaDeUrl, rellena, type Github } from './introData'
 import { loadBitmapFont, PixelText } from './bitmapFont.tsx'
+import { PanelProyectos } from './Proyectos'
 import { asset, en, BORDER_BASE as BORDER, BITMAP_FONT } from './paths'
 import { play, setMuted, startLoop, startMusic, stopLoop, stopMusic, unlockAudio } from './audio'
 import './App.css'
@@ -261,6 +262,7 @@ function App() {
   const [shutter, setShutter] = useState(true)
   const [frame, setFrame] = useState({ scale: 1, x: 0, y: 0, vw: 0, vh: 0, aplanar: true })
   const [jugandoEnVertical, setJugandoEnVertical] = useState(false)
+  const [verProyectos, setVerProyectos] = useState(false)
   const [roster, setRoster] = useState<PortfolioDoc[]>(DOCUMENTS)
   const [placed, setPlaced] = useState<PortfolioDoc | null>(null)
   const [position, setPosition] = useState({ x: 0, y: 0 })
@@ -324,6 +326,15 @@ function App() {
     window.addEventListener('resize', fit)
     return () => window.removeEventListener('resize', fit)
   }, [])
+
+  useEffect(() => {
+    if (!verProyectos) return
+    const alPulsar = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setVerProyectos(false)
+    }
+    window.addEventListener('keydown', alPulsar)
+    return () => window.removeEventListener('keydown', alPulsar)
+  }, [verProyectos])
 
   useEffect(() => {
     let cancelled = false
@@ -739,9 +750,22 @@ function App() {
           <button type="button" className="sound" onClick={toggleMute} title="Sonido (M)">
             {muted ? 'MUTE' : 'SND'}
           </button>
+
+          {/* el boton vive a la derecha del papel (que llega hasta x=418) para
+              que ningun documento tapado pueda pillarlo */}
+          <button
+            type="button"
+            className="btn-proyectos"
+            onClick={() => setVerProyectos(true)}
+            title="Ver proyectos"
+          >
+            PROYECTOS
+          </button>
         </div>
 
         <PixelText className="hint" text={placed ? '' : 'ARRASTRE DOCUMENTOS AQUI'} x={420} y={302} color="#4c5251" align="center" />
+
+        {verProyectos && <PanelProyectos onClose={() => setVerProyectos(false)} />}
       </div>
 
       {mode?.type === 'carry' && (

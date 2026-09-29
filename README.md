@@ -44,6 +44,21 @@ El renderizado es pixel a pixel sobre sprites originales, escalado con
 5. **Sella con `APROBAR` o `DENEGAR`.** El sello es definitivo; el documento se archiva.
 6. **Llama al siguiente** con el botón `CONTINUAR`.
 7. Si algo va mal, haz **clic en la sirena** para pedir apoyo.
+8. Cuando quieras ver **los proyectos de verdad**, pulsa `PROYECTOS` en la esquina del escritorio:
+   sale un panel con cada uno y sus dos enlaces, al repositorio y a la demo en vivo.
+
+## 🗂 Proyectos
+
+El mismo panel, en texto plano. Todos tienen repo y demo en vivo.
+
+| Proyecto | Qué es | Stack | Enlaces |
+|---|---|---|---|
+| [Repository-Library](https://github.com/MarioMunPeq/Repository-Library) | Portfolio con estética de biblioteca de Steam | TypeScript | [repo](https://github.com/MarioMunPeq/Repository-Library) · [demo](https://mariomunpeq.github.io/Repository-Library/) |
+| [portfolio-persona5](https://github.com/MarioMunPeq/portfolio-persona5) | CV viviente con estética de Persona 5 | TypeScript | [repo](https://github.com/MarioMunPeq/portfolio-persona5) · [demo](http://mariomunpeq.is-a.dev/) |
+| [Vault-Archive](https://github.com/MarioMunPeq/Vault-Archive) | Portfolio dentro de un Pip-Boy 3000 de Fallout 3 | TypeScript | [repo](https://github.com/MarioMunPeq/Vault-Archive) · [demo](https://mariomunpeq.github.io/Vault-Archive/) |
+| [Dungeon-Archive](https://github.com/MarioMunPeq/Dungeon-Archive) | Referencia de D&D 5e, offline y mobile-first | TypeScript | [repo](https://github.com/MarioMunPeq/Dungeon-Archive) · [demo](https://mariomunpeq.github.io/Dungeon-Archive/) |
+| [Cosmere-Archive](https://github.com/MarioMunPeq/Cosmere-Archive) | Archivo visual interactivo del universo de Cosmere | TypeScript | [repo](https://github.com/MarioMunPeq/Cosmere-Archive) · [demo](https://mariomunpeq.github.io/Cosmere-Archive/) |
+| [Euromario](https://github.com/MarioMunPeq/Euromario) | Noticias de videojuegos resumidas con IA cada 24 h | Python | [repo](https://github.com/MarioMunPeq/Euromario) · [demo](https://mariomunpeq.github.io/Euromario/) |
 
 ## ✨ Detalles que hacen el proyecto
 
@@ -133,6 +148,7 @@ src/
 ├── App.css            estilos, escalado pixel-perfect y animations
 ├── audio.ts           motor de sonido por eventos
 ├── bitmapFont.tsx     fuente de bitmap para el texto pixelado
+├── Proyectos.tsx      panel con los proyectos y sus enlaces
 ├── introData.ts       calendario, hora, festivos y consulta de GitHub
 ├── paths.ts           rutas de assets con el prefijo de GitHub Pages
 └── portfolioData.ts    el contenido: textos de la intro y de los 8 documentos

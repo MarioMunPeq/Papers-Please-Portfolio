@@ -292,3 +292,67 @@ export const INTRO_SCREENS: IntroScreen[] = [
     cta: 'COMENZAR TURNO',
   },
 ]
+
+/* ---------- proyectos ----------
+   El panel los lista con dos enlaces: el repositorio y la demo en vivo.
+   `nombre` tiene que caber en la placa del archivador (unos 21 caracteres)
+   y `desc` en la linea de al lado (unos 40). */
+export interface PortfolioProject {
+  n: string
+  nombre: string
+  desc: string
+  tech: string
+  repo: string
+  demo: string
+}
+
+export const PROJECTS: PortfolioProject[] = [
+  {
+    n: '01',
+    nombre: 'REPOSITORY-LIBRARY',
+    desc: 'Estética de biblioteca de Steam',
+    tech: 'TypeScript',
+    repo: 'https://github.com/MarioMunPeq/Repository-Library',
+    demo: 'https://mariomunpeq.github.io/Repository-Library/',
+  },
+  {
+    n: '02',
+    nombre: 'PORTFOLIO-PERSONA5',
+    desc: 'CV viviente con estética de Persona 5',
+    tech: 'TypeScript',
+    repo: 'https://github.com/MarioMunPeq/portfolio-persona5',
+    demo: 'http://mariomunpeq.is-a.dev/',
+  },
+  {
+    n: '03',
+    nombre: 'VAULT-ARCHIVE',
+    desc: 'Dentro de un Pip-Boy de Fallout 3',
+    tech: 'TypeScript',
+    repo: 'https://github.com/MarioMunPeq/Vault-Archive',
+    demo: 'https://mariomunpeq.github.io/Vault-Archive/',
+  },
+  {
+    n: '04',
+    nombre: 'DUNGEON-ARCHIVE',
+    desc: 'Referencia de D&D 5e, offline y mobile',
+    tech: 'TypeScript',
+    repo: 'https://github.com/MarioMunPeq/Dungeon-Archive',
+    demo: 'https://mariomunpeq.github.io/Dungeon-Archive/',
+  },
+  {
+    n: '05',
+    nombre: 'COSMERE-ARCHIVE',
+    desc: 'Archivo visual del universo de Cosmere',
+    tech: 'TypeScript',
+    repo: 'https://github.com/MarioMunPeq/Cosmere-Archive',
+    demo: 'https://mariomunpeq.github.io/Cosmere-Archive/',
+  },
+  {
+    n: '06',
+    nombre: 'EUROMARIO',
+    desc: 'Noticias de videojuegos con IA cada 24h',
+    tech: 'Python',
+    repo: 'https://github.com/MarioMunPeq/Euromario',
+    demo: 'https://mariomunpeq.github.io/Euromario/',
+  },
+]
