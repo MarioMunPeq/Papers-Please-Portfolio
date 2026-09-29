@@ -49,17 +49,18 @@ button {
 .viewport {
   position: fixed;
   inset: 0;
-  background: #767c80;
+  background:
+    linear-gradient(
+      to bottom,
+      #737373 0 var(--split, 0%),
+      rgba(0, 0, 0, 0) var(--split, 0%) 100%
+    ),
+    linear-gradient(
+      to right,
+      #422a1c 0 31%,
+      #191212 31% 100%
+    );
   overflow: hidden;
-}
-
-.bleed {
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 0;
-  height: 32.2%;
-  background: #6f7579;
 }
 
 .stage {
@@ -93,6 +94,22 @@ canvas {
   top: 0;
   width: 570px;
   height: 103px;
+}
+
+/* cola y guardias del border */
+.cast {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 570px;
+  height: 103px;
+  z-index: 6;
+  pointer-events: none;
+}
+
+.cast-person {
+  position: absolute;
+  image-rendering: pixelated;
 }
 
 
@@ -177,23 +194,24 @@ canvas {
 .stampbar-slots {
   position: absolute;
   left: 0;
-  top: 6px;
+  top: 0;
   width: 280px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: space-around;
-  padding: 0 26px;
+  height: 65px;
 }
 
 .stamp-slot {
+  position: absolute;
+  top: 0;
   width: 75px;
-  height: 40px;
+  height: 65px;
   background: transparent;
   border: 0;
   padding: 0;
   cursor: grab;
 }
+
+.stamp-slot.denied { left: 33px; }
+.stamp-slot.approved { left: 173px; }
 
 .stamp-slot:disabled {
   opacity: 0.4;
@@ -204,7 +222,7 @@ canvas {
   width: 75px;
   height: 65px;
   object-fit: contain;
-  object-position: top center;
+  image-rendering: pixelated;
 }
 
 .stampbar-mid {
@@ -223,6 +241,53 @@ canvas {
   height: 20px;
 }
 
+/* ---------- entrant (solicitante) ---------- */
+.entrant {
+  position: absolute;
+  left: 186px;
+  top: 6px;
+  width: 34px;
+  height: 44px;
+  z-index: 11;
+  border: 2px solid #2b2b2b;
+  background: #4a3b3b;
+  animation: entrant-in 5s steps(28) both;
+}
+
+.entrant-bust {
+  width: 100%;
+  height: 100%;
+  background-size: 400% 200%;
+  background-position: 0 0;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+}
+
+@keyframes entrant-in {
+  from { transform: translateX(0); }
+  to { transform: translateX(300px); }
+}
+
+/* ---------- siren (hit area sobre la cabina existente) ---------- */
+.siren {
+  position: absolute;
+  left: 144px;
+  top: 61px;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  z-index: 12;
+}
+
+.siren:hover,
+.siren.is-on {
+  background: rgba(214, 62, 44, 0.42);
+  box-shadow: 0 0 0 1px rgba(255, 132, 96, 0.55);
+}
+
 /* ---------- document tray (bottom-left desk) ---------- */
 .tray {
   position: absolute;
@@ -238,9 +303,9 @@ canvas {
   top: 152px;
   width: 22px;
   height: 28px;
-  padding: 1px;
-  background: #2a2c20;
-  border: 1px solid #6a6d4e;
+  padding: 0;
+  background: transparent;
+  border: 0;
   cursor: grab;
   pointer-events: auto;
   line-height: 0;
@@ -253,8 +318,8 @@ canvas {
 }
 
 .tray-doc:hover {
-  border-color: #c8c48a;
-  transform: translateY(-2px);
+  transform: translateY(-3px);
+  filter: brightness(1.22);
 }
 
 .tray-give {
@@ -288,8 +353,6 @@ canvas {
   top: 0;
   cursor: grab;
   touch-action: none;
-  outline: 1px solid rgba(226, 224, 208, 0.55);
-  outline-offset: 1px;
   will-change: transform;
   animation: paper-land 0.2s steps(4) both;
 }
@@ -448,8 +511,9 @@ canvas {
 }
 
 .intro-copy p {
-  font-size: clamp(8px, 1.35vh, 15px);
-  line-height: 1.9;
+  font-family: 'PixelDoc', 'Courier New', monospace;
+  font-size: clamp(11px, 2.1vh, 22px);
+  line-height: 1.7;
   color: #d8d3c2;
 }
 
@@ -458,6 +522,7 @@ canvas {
   border: 0;
   border-bottom: 2px solid #6d6a5c;
   color: #cfcbba;
+  font-family: 'PixelUI', monospace;
   font-size: clamp(9px, 1.5vh, 16px);
   letter-spacing: 2px;
   padding: 1.4vh 4px 1vh;

@@ -1,4 +1,4 @@
-export interface DocField {
+﻿export interface DocField {
   t?: string
   x: number
   y: number
@@ -184,16 +184,18 @@ export interface IntroScreen {
   cta: string
 }
 
+const CLEAN = '/assets-english/intro-clean'
+
 export const INTRO_SCREENS: IntroScreen[] = [
   {
-    image: '/assets/intro-clean/Shutter.png',
-    alt: 'Inmigración Obristán',
+    image: `${CLEAN}/Shutter.png`,
+    alt: 'Ministerio de Admisión de Arstotzka',
     lines: [],
     cta: 'CONTINUAR',
   },
   {
-    image: '/assets/intro-clean/Intro1.png',
-    alt: 'Sorteo laboral, octubre de 1982',
+    image: `${CLEAN}/Intro0.png`,
+    alt: 'Carta del Ministerio de Admisión',
     lines: [
       'El sorteo laboral de octubre ha terminado.',
       'Su nombre ha sido seleccionado.',
@@ -201,21 +203,45 @@ export const INTRO_SCREENS: IntroScreen[] = [
     cta: 'CONTINUAR',
   },
   {
-    image: '/assets/intro-clean/Arstotzka.png',
+    image: `${CLEAN}/Passport1.png`,
+    alt: 'Documentación personal',
+    lines: [
+      'Para su colocación inmediata, preséntese en el',
+      'Ministerio de Admisión, Puesto de Frontera de Grestin.',
+    ],
+    cta: 'CONTINUAR',
+  },
+  {
+    image: `${CLEAN}/Passport3.png`,
+    alt: 'Documentación del solicitante',
+    lines: [
+      'Se le proporcionará un apartamento para usted y',
+      'su familia en Grestin Este. Clase-8.',
+    ],
+    cta: 'CONTINUAR',
+  },
+  {
+    image: `${CLEAN}/Arstotzka.png`,
     alt: 'Arstotzka',
     lines: [
-      'Felicidades. Para su colocación inmediata, preséntese en el Ministerio de Admisión, Puesto de Frontera de Grestin.',
-      'Se le proporcionará un apartamento para usted y su familia en Grestin Este.',
       'Gloria a Arstotzka.',
     ],
     cta: 'CONTINUAR',
   },
   {
-    image: '/assets/intro-clean/Obrinspector.png',
-    alt: 'Ministerio de Admisión',
+    image: `${CLEAN}/Obrinspector.png`,
+    alt: 'Puesto de inspección',
     lines: [
-      'Su plaza ha sido asignada como inspector de admisiones.',
+      'Su plaza ha sido asignada: inspector de admisiones.',
       'Revise la documentación. Apruebe o deniegue.',
+    ],
+    cta: 'CONTINUAR',
+  },
+  {
+    image: `${CLEAN}/WaitingLine.png`,
+    alt: 'Cola de solicitantes',
+    lines: [
+      'Los solicitantes esperan su turno.',
     ],
     cta: 'COMENZAR TURNO',
   },

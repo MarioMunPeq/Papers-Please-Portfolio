@@ -41,7 +41,91 @@ const STAMP_TOOL: Record<StampKind, string> = {
 
 const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max)
 
-/* sprite sheet: sheet, frame count, frame width, frame height, row, duration */
+const BUSTS = ['SheetM0p.png', 'SheetM1p.png', 'SheetM2p.png', 'SheetM3p.png', 'SheetM4p.png', 'SheetM5p.png', 'SheetM6p.png']
+
+const BORDER = '/assets-english/border'
+
+/* cola de solicitantes esperando, a la izquierda del checkpoint.
+   La dispersion es determinista (hash del indice) para que no se reorden
+   en cada render, pero que la masa no parezca una rejilla. */
+const QUEUE_BANDS = [
+  { y: 26, x0: -8, pitch: 8 },
+  { y: 41, x0: -5, pitch: 8 },
+  { y: 56, x0: -8, pitch: 8 },
+  { y: 71, x0: -10, pitch: 8 },
+  { y: 86, x0: -11, pitch: 8 },
+]
+const QUEUE_PER_BAND = 13
+
+function hash(i: number, salt: number) {
+  const s = Math.sin((i + 1) * (salt * 12.9898)) * 43758.5453
+  return s - Math.floor(s)
+}
+
+const QUEUE = QUEUE_BANDS.flatMap((band, b) =>
+  Array.from({ length: QUEUE_PER_BAND }, (_, i) => {
+    const index = b * QUEUE_PER_BAND + i
+    return {
+      x: band.x0 + i * band.pitch + Math.round(hash(index, 1) * 6) - 3,
+      y: band.y + Math.round(hash(index, 2) * 6) - 3,
+      sprite: Math.floor(hash(index, 3) * 10),
+      flip: hash(index, 4) > 0.5,
+    }
+  })
+)
+
+/* guardias apostados a la derecha */
+const SOLDIERS = [
+  { src: 'navy3', x: 406, y: 20 },
+  { src: 'navy5', x: 409, y: 42 },
+  { src: 'green7', x: 436, y: 51 },
+]
+
+function BorderCast() {
+  return (
+    <div className="cast" aria-hidden="true">
+      {QUEUE.map((person, i) => (
+        <img
+          key={`q${i}`}
+          className="cast-person"
+          src={`${BORDER}/black${person.sprite}.png`}
+          style={{
+            left: person.x,
+            top: person.y,
+            transform: person.flip ? 'scaleX(-1)' : 'none',
+          }}
+          alt=""
+          draggable={false}
+        />
+      ))}
+      {SOLDIERS.map((soldier, i) => (
+        <img
+          key={`s${i}`}
+          className="cast-person"
+          src={`${BORDER}/${soldier.src}.png`}
+          style={{ left: soldier.x, top: soldier.y }}
+          alt=""
+          draggable={false}
+        />
+      ))}
+    </div>
+  )
+}
+
+function Entrant({ sheet, onDone }: { sheet: string; onDone: () => void }) {
+  useEffect(() => {
+    const end = window.setTimeout(onDone, 5200)
+    return () => window.clearTimeout(end)
+  }, [onDone])
+  return (
+    <div className="entrant">
+      <div
+        className="entrant-bust"
+        style={{ backgroundImage: `url(/assets-english/faces/${sheet})` }}
+      />
+    </div>
+  )
+}
 
 function Intro({ onStart }: { onStart: () => void }) {
   const [index, setIndex] = useState(0)
@@ -83,7 +167,9 @@ function Intro({ onStart }: { onStart: () => void }) {
 function App() {
   const [started, setStarted] = useState(false)
   const [shutter, setShutter] = useState(true)
-  const [frame, setFrame] = useState({ scale: 1, x: 0, y: 0 })
+  const [entrant, setEntrant] = useState<string | null>(null)
+  const [sirenOn, setSirenOn] = useState(false)
+  const [frame, setFrame] = useState({ scale: 1, x: 0, y: 0, vw: 0, vh: 0 })
   const [roster, setRoster] = useState<PortfolioDoc[]>(DOCUMENTS)
   const [placed, setPlaced] = useState<PortfolioDoc | null>(null)
   const [position, setPosition] = useState({ x: 0, y: 0 })
@@ -101,15 +187,13 @@ function App() {
 
   useEffect(() => {
     const fit = () => {
-      const rawX = window.innerWidth / W
-      const rawY = window.innerHeight / H
-      const fitScale = Math.min(rawX, rawY)
-      const integer = Math.floor(fitScale)
-      const scale = integer >= 1 ? integer : fitScale
+      const s = Math.min(window.innerWidth / W, window.innerHeight / H)
       setFrame({
-        scale,
-        x: Math.round((window.innerWidth - W * scale) / 2),
-        y: Math.round((window.innerHeight - H * scale) / 2),
+        scale: s,
+        x: (window.innerWidth - W * s) / 2,
+        y: (window.innerHeight - H * s) / 2,
+        vw: window.innerWidth,
+        vh: window.innerHeight,
       })
     }
     fit()
@@ -209,9 +293,24 @@ function App() {
     setPlaced(doc)
     setStamps([])
     setRoster((current) => current.filter((item) => item.id !== doc.id))
-    setPosition({ x: 330 - size.width / 2, y: 235 - size.height / 2 })
+    setPosition({
+      x: Math.round((W - WALL_W - size.width) / 2),
+      y: Math.round((H - DESK_Y - size.height) / 2),
+    })
     play('paper', 'drop', { volume: 0.5 })
   }, [fitPaper])
+
+  const callEntrant = useCallback(() => {
+    if (entrant) return
+    const pick = BUSTS[Math.floor(Math.random() * BUSTS.length)]
+    setSirenOn(true)
+    play('border', 'foghorn', { volume: 0.5 })
+    window.setTimeout(() => {
+      setEntrant(pick)
+      play('traveler', 'walkin', { volume: 0.45 })
+    }, 260)
+    window.setTimeout(() => setSirenOn(false), 700)
+  }, [entrant])
 
   const returnDocument = useCallback(() => {
     if (!placed) return
@@ -221,29 +320,18 @@ function App() {
     play('filer', 'open', { volume: 0.4 })
   }, [placed])
 
-  const handlePaperDown = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
-    if (!placed || mode) return
-    if (event.button !== 0) return
-    event.preventDefault()
-    play('paper', 'grab', { volume: 0.4 })
-    const rect = paperRef.current?.getBoundingClientRect()
-    if (!rect) return
-    paperDrag.current = {
-      dx: event.clientX - rect.left,
-      dy: event.clientY - rect.top,
-    }
-  }, [placed, mode])
-
-  const handlePaperMove = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
+  const handlePaperMove = useCallback((event: { clientX: number; clientY: number }) => {
     if (!paperDrag.current || !placed) return
     const rect = deskRef.current?.getBoundingClientRect()
     if (!rect) return
-    const sx = rect.width / (W - WALL_W)
-    const sy = rect.height / (H - DESK_Y)
+    const areaW = rect.width * ((W - WALL_W) / W)
+    const areaH = rect.height * ((H - DESK_Y) / H)
+    const areaLeft = rect.left + rect.width * (WALL_W / W)
+    const areaTop = rect.top
     const size = fitPaper(placed)
     setPosition({
-      x: clamp((event.clientX - rect.left) / sx - paperDrag.current.dx, 0, (W - WALL_W) - size.width),
-      y: clamp((event.clientY - rect.top) / sy - paperDrag.current.dy, 0, (H - DESK_Y) - size.height),
+      x: clamp((event.clientX - areaLeft) / areaW * (W - WALL_W) - paperDrag.current.dx, 0, (W - WALL_W) - size.width),
+      y: clamp((event.clientY - areaTop) / areaH * (H - DESK_Y) - paperDrag.current.dy, 0, (H - DESK_Y) - size.height),
     })
   }, [placed, fitPaper])
 
@@ -252,6 +340,35 @@ function App() {
     paperDrag.current = null
     play('paper', 'release', { volume: 0.4 })
   }, [])
+
+  const handlePaperDown = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
+    if (!placed || mode) return
+    if (event.button !== 0) return
+    event.preventDefault()
+    play('paper', 'grab', { volume: 0.4 })
+    const rect = deskRef.current?.getBoundingClientRect()
+    if (!rect) return
+    const area = {
+      left: rect.left + rect.width * (WALL_W / W),
+      top: rect.top,
+      width: rect.width * ((W - WALL_W) / W),
+      height: rect.height * ((H - DESK_Y) / H),
+    }
+    paperDrag.current = {
+      dx: (event.clientX - area.left) / area.width * (W - WALL_W) - position.x,
+      dy: (event.clientY - area.top) / area.height * (H - DESK_Y) - position.y,
+    }
+    const move = (native: PointerEvent) => handlePaperMove(native)
+    const up = () => {
+      window.removeEventListener('pointermove', move)
+      window.removeEventListener('pointerup', up)
+      window.removeEventListener('pointercancel', up)
+      endPaperDrag()
+    }
+    window.addEventListener('pointermove', move)
+    window.addEventListener('pointerup', up)
+    window.addEventListener('pointercancel', up)
+  }, [placed, mode, position, handlePaperMove, endPaperDrag])
 
   const toggleMute = useCallback(() => {
     setMutedState((value) => {
@@ -268,15 +385,29 @@ function App() {
   if (!started) return <Intro onStart={() => setStarted(true)} />
 
   return (
-    <div className="viewport">
-      <div className="bleed" />
+    <div
+      className="viewport"
+      style={{
+        ['--split' as string]: `${frame.vh > 0 ? Math.min(100, Math.max(0, (frame.y / frame.vh) * 100)) : 0}%`,
+      }}
+    >
       <div className="stage" style={{ transform: `translate(${frame.x}px, ${frame.y}px) scale(${frame.scale})` }}>
 
         <div className="outside">
           <img className="checkpoint" src="/assets-english/CheckpointBack.png" alt="" draggable={false} />
+          <BorderCast />
+          {entrant && <Entrant sheet={entrant} onDone={() => setEntrant(null)} />}
         </div>
 
-        <div className="desk" ref={deskRef} onPointerMove={handlePaperMove} onPointerUp={endPaperDrag}>
+        <button
+          type="button"
+          className={`siren${sirenOn ? ' is-on' : ''}`}
+          onClick={callEntrant}
+          title="LLAMAR AL SIGUIENTE"
+          aria-label="Llamar al siguiente solicitante"
+        />
+
+        <div className="desk" ref={deskRef}>
           <img className="desk-sprite" src="/assets-english/Desk.png" alt="" draggable={false} />
 
           <div className="wall">
@@ -292,12 +423,12 @@ function App() {
           <div className="stampbar">
             <img className="stampbar-frame" src="/assets-english/StampBarTop.png" alt="" draggable={false} />
             <div className="stampbar-slots">
-              <button type="button" className="stamp-slot" onPointerDown={() => { play('button', 'down', { volume: 0.45 }); play('metal', 'grab', { volume: 0.4 }); setMode({ type: 'carry', kind: 'denied' }) }} disabled={!placed} title="DENEGAR">
-                <img src={STAMP_TOOL.denied} alt="Denegar" draggable={false} />
-              </button>
-              <button type="button" className="stamp-slot" onPointerDown={() => { play('button', 'down', { volume: 0.45 }); play('metal', 'grab', { volume: 0.4 }); setMode({ type: 'carry', kind: 'approved' }) }} disabled={!placed} title="APROBAR">
-                <img src={STAMP_TOOL.approved} alt="Aprobar" draggable={false} />
-              </button>
+                <button type="button" className="stamp-slot denied" onPointerDown={() => { play('button', 'down', { volume: 0.45 }); play('metal', 'grab', { volume: 0.4 }); setMode({ type: 'carry', kind: 'denied' }) }} disabled={!placed} title="DENEGAR">
+                  <img src={STAMP_TOOL.denied} alt="Denegar" draggable={false} />
+                </button>
+                <button type="button" className="stamp-slot approved" onPointerDown={() => { play('button', 'down', { volume: 0.45 }); play('metal', 'grab', { volume: 0.4 }); setMode({ type: 'carry', kind: 'approved' }) }} disabled={!placed} title="APROBAR">
+                  <img src={STAMP_TOOL.approved} alt="Aprobar" draggable={false} />
+                </button>
             </div>
             <img className="stampbar-mid" src="/assets-english/StampBarMid.png" alt="" draggable={false} />
             <img className="stampbar-bot" src="/assets-english/StampBarBot.png" alt="" draggable={false} />
@@ -331,7 +462,7 @@ function App() {
               style={{
                 width: paperSize.width,
                 height: paperSize.height,
-                transform: `translate3d(${WALL_W + position.x}px, ${DESK_Y + position.y}px, 0)`,
+                transform: `translate3d(${WALL_W + position.x}px, ${position.y}px, 0)`,
               }}
               onPointerDown={handlePaperDown}
               role="group"

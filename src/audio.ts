@@ -7,6 +7,16 @@ const banks: Record<string, Bank> = {
     desk: ['booth-ambient.wav'],
     border: ['border-ambient.wav'],
   },
+  border: {
+    foghorn: ['border-foghorn.wav'],
+    callguards: ['border-callguards.wav'],
+    bosshorn: ['border-bosshorn.wav'],
+  },
+  traveler: {
+    walkin: ['traveler-walkin.wav'],
+    walkout: ['traveler-walkout.wav'],
+    breathein: ['traveler-breathein.wav'],
+  },
   intro: {
     start: ['booth-intro.wav'],
     shutter: ['shutter-rise.wav'],
