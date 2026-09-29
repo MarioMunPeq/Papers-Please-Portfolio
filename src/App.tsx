@@ -309,7 +309,7 @@ function App() {
                 type="button"
                 key={doc.id}
                 className="tray-doc"
-                style={{ left: `${6 + index * 27}px` }}
+                style={{ left: `${5 + index * 23}px` }}
                 onClick={() => placeDocument(doc)}
                 onPointerDown={() => play('inspect', 'highlight', { volume: 0.3 })}
                 title={doc.title}

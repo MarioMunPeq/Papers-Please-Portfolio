@@ -95,38 +95,6 @@ canvas {
   height: 103px;
 }
 
-.walker-sprite {
-  position: absolute;
-  left: 0;
-  width: 0;
-  height: 0;
-}
-
-.walker-strip {
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: calc(var(--fw) * 1px);
-  height: calc(var(--fh) * 1px);
-  background-repeat: no-repeat;
-  animation-name: stroll;
-  animation-duration: var(--dur);
-  animation-timing-function: linear;
-  animation-iteration-count: infinite;
-}
-
-@keyframes stroll {
-  from { transform: translateX(var(--x0)); }
-  to { transform: translateX(var(--x1)); }
-}
-
-.walker-sprite[style*='--dir:1'] .walker-strip {
-  animation-direction: reverse;
-}
-
-.walker-id {
-  display: none;
-}
 
 /* ---------- desk ---------- */
 .desk {
@@ -166,7 +134,7 @@ canvas {
 
 .mugshot {
   position: absolute;
-  left: 34px;
+  left: 32px;
   right: 0;
   top: 0;
   bottom: 0;
@@ -181,20 +149,12 @@ canvas {
   left: 0;
   top: 135px;
   width: 178px;
-  height: 51px;
-}
-
-.console-sprite {
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: 178px;
-  height: 51px;
+  height: 82px;
 }
 
 .console-date,
 .console-weight {
-  top: 135px;
+  top: 103px;
 }
 
 /* ---------- stamp bar ---------- */
@@ -263,79 +223,61 @@ canvas {
   height: 20px;
 }
 
-/* ---------- roster ---------- */
-.roster {
-  position: absolute;
-  left: 186px;
-  top: 78px;
-  width: 104px;
-  height: 136px;
-}
-
-.roster-sprite {
+/* ---------- document tray (bottom-left desk) ---------- */
+.tray {
   position: absolute;
   left: 0;
   top: 0;
-  width: 104px;
-  height: 136px;
+  width: 178px;
+  height: 217px;
+  pointer-events: none;
 }
 
-.roster-list {
+.tray-doc {
   position: absolute;
-  left: 12px;
-  top: 20px;
-  width: 80px;
-  height: 92px;
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  overflow: hidden;
+  top: 152px;
+  width: 22px;
+  height: 28px;
+  padding: 1px;
+  background: #2a2c20;
+  border: 1px solid #6a6d4e;
+  cursor: grab;
+  pointer-events: auto;
+  line-height: 0;
 }
 
-.roster-item {
-  background: transparent;
-  border: 0;
-  padding: 1px 2px;
-  text-align: left;
-  color: #3f3f2e;
-  font-family: 'PixelDoc', monospace;
-  font-size: 8px;
-  line-height: 1.1;
-  cursor: pointer;
-  letter-spacing: 0.2px;
+.tray-doc img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
-.roster-item:hover {
-  background: rgba(120, 118, 70, 0.28);
+.tray-doc:hover {
+  border-color: #c8c48a;
+  transform: translateY(-2px);
 }
 
-.roster-empty {
-  color: #6b6b52;
-  font-family: 'PixelDoc', monospace;
-  font-size: 8px;
-  padding: 4px 2px;
-}
-
-.roster-give {
+.tray-give {
   position: absolute;
-  left: 14px;
-  top: 116px;
-  width: 76px;
-  height: 16px;
+  left: 112px;
+  top: 190px;
+  width: 60px;
+  height: 14px;
   background: transparent;
   border: 0;
   padding: 0;
   cursor: pointer;
+  pointer-events: auto;
 }
 
-.roster-give:disabled {
+.tray-give:disabled {
   opacity: 0.35;
   cursor: not-allowed;
 }
 
-.roster-give img {
-  width: 80px;
-  height: 22px;
+.tray-give img {
+  width: 60px;
+  height: 15px;
   object-fit: contain;
 }
 
