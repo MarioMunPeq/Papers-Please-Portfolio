@@ -1,4 +1,4 @@
-const BASE = '/audios'
+import { AUDIO_BASE as BASE } from './paths'
 
 type Bank = Record<string, string[]>
 

@@ -1,4 +1,6 @@
-﻿export interface DocField {
+import { INTRO_BASE as CLEAN, paper } from './paths'
+
+export interface DocField {
   t?: string
   x: number
   y: number
@@ -58,7 +60,7 @@ export const DOCUMENTS: PortfolioDoc[] = [  {
     short: 'PASSPORT',
     title: 'Pasaporte · Perfil profesional',
     subtitle: 'PERFIL PROFESIONAL',
-    image: '/assets/papers/PassportInnerArstotzka.png',
+    image: paper('PassportInnerArstotzka.png'),
     native: 130,
     photo: { x: 6.2, y: 60, w: 30.8, h: 30, tint: '#8d8494', blend: 'multiply' },
     fields: [
@@ -75,7 +77,7 @@ export const DOCUMENTS: PortfolioDoc[] = [  {
     short: 'ID CARD',
     title: 'Documento de identidad',
     subtitle: 'DATOS PERSONALES',
-    image: '/assets/papers/IdCardInner.png',
+    image: paper('IdCardInner.png'),
     native: 126,
     photo: { x: 4.5, y: 24, w: 32, h: 65, tint: '#b6a9c9', blend: 'multiply' },
     fields: [
@@ -90,7 +92,7 @@ export const DOCUMENTS: PortfolioDoc[] = [  {
     short: 'WORK PERMIT',
     title: 'Permiso de trabajo',
     subtitle: 'EXPERIENCIA LABORAL',
-    image: '/assets/papers/WorkPermitInner.png',
+    image: paper('WorkPermitInner.png'),
     native: 147,
     fields: [
       { t: 'DESARROLLADOR WEB', x: 25, y: 51, w: 70, size: 5, color: INK },
@@ -106,7 +108,7 @@ export const DOCUMENTS: PortfolioDoc[] = [  {
     short: 'DIPLOMATIC AUTH',
     title: 'Autorización diplomática',
     subtitle: 'PROYECTOS DESTACADOS',
-    image: '/assets/papers/DiplomaticAuthInner.png',
+    image: paper('DiplomaticAuthInner.png'),
     native: 150,
     fields: [
       /* las etiquetas "AGENTE......." (puntos hasta el 61%) y "PASAPORTE....."
@@ -123,7 +125,7 @@ export const DOCUMENTS: PortfolioDoc[] = [  {
     short: 'ENTRY VISA',
     title: 'Visado de estudios',
     subtitle: 'FORMACIÓN',
-    image: '/assets/papers/VisaSlipInner.png',
+    image: paper('VisaSlipInner.png'),
     native: 120,
     fields: [
       { t: 'FP DESARROLLO', x: 20, y: 25, w: 60, size: 5, align: 'center', color: '#8a7f2e' },
@@ -136,7 +138,7 @@ export const DOCUMENTS: PortfolioDoc[] = [  {
     short: 'FINGERPRINTS',
     title: 'Registro de habilidades',
     subtitle: 'TECNOLOGÍAS',
-    image: '/assets/papers/FingerprintsInner.png',
+    image: paper('FingerprintsInner.png'),
     native: 170,
     fields: [
       /* cinco columnas (una por recuadro punteado del papel) y tres filas:
@@ -164,7 +166,7 @@ export const DOCUMENTS: PortfolioDoc[] = [  {
     short: 'VACCINE CERT',
     title: 'Certificado de certificaciones',
     subtitle: 'CERTIFICACIONES',
-    image: '/assets/papers/VaccineCertInner.png',
+    image: paper('VaccineCertInner.png'),
     native: 135,
     fields: [
       { t: 'MUÑOZ PEQUEÑO, MARIO', x: 12, y: 34, w: 76, size: 4.5, color: '#6b4a2c' },
@@ -182,7 +184,7 @@ export const DOCUMENTS: PortfolioDoc[] = [  {
     short: 'RULES',
     title: 'Manual de protocolo',
     subtitle: 'INFORMACIÓN ADICIONAL',
-    image: '/assets/papers/RulesInnerBasic.png',
+    image: paper('RulesInnerBasic.png'),
     native: 246,
     fields: [
       /* cinco huecos por pagina, marcados en el papel a y = 18,5 / 33,5 /
@@ -225,7 +227,6 @@ export interface IntroScreen {
   cta: string
 }
 
-const CLEAN = '/assets-english/intro-clean'
 
 /* Textos de la introduccion. Se pueden usar estas etiquetas y se sustituyen
    solas al abrir la pagina:

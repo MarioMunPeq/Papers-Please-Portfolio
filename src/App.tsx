@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as
 import { DOCUMENTS, DOC_ASPECT, INTRO_SCREENS, type PortfolioDoc } from './portfolioData'
 import { cargaGithub, ctxIntro, fechaDeUrl, rellena, type Github } from './introData'
 import { loadBitmapFont, PixelText } from './bitmapFont.tsx'
+import { asset, en, BORDER_BASE as BORDER, BITMAP_FONT } from './paths'
 import { play, setMuted, startLoop, startMusic, stopLoop, stopMusic, unlockAudio } from './audio'
 import './App.css'
 
@@ -59,18 +60,17 @@ type Mode =
   | null
 
 const INK: Record<StampKind, string> = {
-  approved: '/assets-english/InkApproved.png',
-  denied: '/assets-english/InkDenied.png',
+  approved: en('InkApproved.png'),
+  denied: en('InkDenied.png'),
 }
 
 const STAMP_TOOL: Record<StampKind, string> = {
-  approved: '/assets-english/StampBotApproved.png',
-  denied: '/assets-english/StampBotDenied.png',
+  approved: en('StampBotApproved.png'),
+  denied: en('StampBotDenied.png'),
 }
 
 const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max)
 
-const BORDER = '/assets-english/border'
 
 /* cola de solicitantes esperando, a la izquierda del checkpoint.
    La dispersion es determinista (hash del indice) para que no se reorden
@@ -226,7 +226,7 @@ function DocSheet() {
                     mixBlendMode: doc.photo.blend as React.CSSProperties['mixBlendMode'],
                   }}
                 >
-                  <img src="/assets/avatar.png" alt="" draggable={false} />
+                  <img src={asset('avatar.png')} alt="" draggable={false} />
                 </span>
               )}
               {doc.fields.map((field, i) => (
@@ -278,7 +278,7 @@ function App() {
   const zCounter = useRef(0)
   const stampId = useRef(0)
 
-  useEffect(() => { loadBitmapFont('/assets-english/fonts/atarismall_u_regular_8.png') }, [])
+  useEffect(() => { loadBitmapFont(BITMAP_FONT) }, [])
 
   const fitPaper = useCallback((doc: PortfolioDoc) => {
     const ratio = aspects[doc.id] ?? 0.8
@@ -580,7 +580,7 @@ function App() {
       <div className="stage" style={{ transform: `translate(${frame.x}px, ${frame.y}px) scale(${frame.scale})` }}>
 
         <div className="outside">
-          <img className="checkpoint" src="/assets-english/CheckpointBack.png" alt="" draggable={false} />
+          <img className="checkpoint" src={en('CheckpointBack.png')} alt="" draggable={false} />
           <BorderCast />
         </div>
 
@@ -596,11 +596,11 @@ function App() {
         </button>
 
         <div className="desk" ref={deskRef}>
-          <img className="desk-sprite" src="/assets-english/Desk.png" alt="" draggable={false} />
+          <img className="desk-sprite" src={en('Desk.png')} alt="" draggable={false} />
 
           <div className="wall">
-            <img className="wall-sprite" src="/assets-english/BoothWall.png" alt="" draggable={false} />
-            <img className="mugshot" src="/assets/avatar.png" alt="Retrato" draggable={false} />
+            <img className="wall-sprite" src={en('BoothWall.png')} alt="" draggable={false} />
+            <img className="mugshot" src={asset('avatar.png')} alt="Retrato" draggable={false} />
           </div>
 
           <div className="console">
@@ -609,7 +609,7 @@ function App() {
           </div>
 
           <div className="stampbar">
-            <img className="stampbar-frame" src="/assets-english/StampBarTop.png" alt="" draggable={false} />
+            <img className="stampbar-frame" src={en('StampBarTop.png')} alt="" draggable={false} />
             <div className="stampbar-slots">
                 <button type="button" className="stamp-slot denied" onPointerDown={() => { play('button', 'down', { volume: 0.45 }); play('metal', 'grab', { volume: 0.4 }); setMode({ type: 'carry', kind: 'denied' }) }} disabled={!placed} title="DENEGAR">
                   <img src={STAMP_TOOL.denied} alt="Denegar" draggable={false} />
@@ -618,8 +618,8 @@ function App() {
                   <img src={STAMP_TOOL.approved} alt="Aprobar" draggable={false} />
                 </button>
             </div>
-            <img className="stampbar-mid" src="/assets-english/StampBarMid.png" alt="" draggable={false} />
-            <img className="stampbar-bot" src="/assets-english/StampBarBot.png" alt="" draggable={false} />
+            <img className="stampbar-mid" src={en('StampBarMid.png')} alt="" draggable={false} />
+            <img className="stampbar-bot" src={en('StampBarBot.png')} alt="" draggable={false} />
           </div>
 
           <div
@@ -654,7 +654,7 @@ function App() {
           </div>
 
           <button type="button" className="tray-give" onClick={() => returnDocument()} disabled={!placed} title="Entregar">
-            <img src="/assets/GiveIcon.png" alt="Entregar" draggable={false} />
+            <img src={asset('GiveIcon.png')} alt="Entregar" draggable={false} />
           </button>
 
           {placed && (
@@ -685,7 +685,7 @@ function App() {
                   }}
                   aria-hidden="true"
                 >
-                  <img src="/assets/avatar.png" alt="" draggable={false} />
+                  <img src={asset('avatar.png')} alt="" draggable={false} />
                 </span>
               )}
               {placed.fields.map((field, index) => (
@@ -723,7 +723,7 @@ function App() {
           {shutter && (
             <img
               className="shutter-sprite"
-              src="/assets-english/Shutter.png"
+              src={en('Shutter.png')}
               alt=""
               draggable={false}
               onAnimationEnd={() => setShutter(false)}
