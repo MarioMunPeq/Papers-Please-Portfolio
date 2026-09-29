@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
-import { DOCUMENTS, INTRO_SCREENS, type PortfolioDoc } from './portfolioData'
+import { DOCUMENTS, DOC_ASPECT, INTRO_SCREENS, type PortfolioDoc } from './portfolioData'
 import { loadBitmapFont, PixelText } from './bitmapFont.tsx'
 import { play, setMuted, startLoop, startMusic, stopLoop, stopMusic, unlockAudio } from './audio'
 import './App.css'
@@ -13,10 +13,34 @@ const PAPER_MAX_W = 240
 const PAPER_MAX_H = 124
 const STAMP_RATIO = 0.34
 
-/* zona de la mesa donde se poseran los documentos, en coordenadas locales
-   del papel (su origen esta en el borde derecho de la pared, x = WALL_W):
-   por debajo de la barra de sellos y con margen al borde inferior */
-const SURFACE = { x: 4, y: 88, w: 384, h: 127 }
+/* la pila de documentos de la izquierda. La franja verde del escritorio va
+   de stage y 210 a 268, o sea del 107 al 165 en coordenadas del escritorio.
+   Los papeles se solapan a proposito: eso permite que quepan grandes.
+   Los huecos van intercalados por filas para que al quitar uno los demas
+   no se recoloquen. */
+const MESA = { x: 0, y: 107, w: 178, h: 58 }
+const MESA_PAPER = { w: 42, h: 32 }
+const MESA_SLOTS = [
+  { x: 0, y: 1, rot: -5 },
+  { x: 88, y: 3, rot: 4 },
+  { x: 0, y: 26, rot: 6 },
+  { x: 88, y: 28, rot: -6 },
+  { x: 44, y: 1, rot: -3 },
+  { x: 132, y: 4, rot: 7 },
+  { x: 44, y: 26, rot: 2 },
+  { x: 132, y: 28, rot: -4 },
+]
+
+/* si se suelta un papel cerca de la franja, se encaja dentro de ella;
+   si se suelta lejos, devuelve null y vuelve a su hueco de origen */
+function snapToBand(x: number, y: number) {
+  const centreY = y + MESA_PAPER.h / 2
+  if (centreY < MESA.y - 26 || centreY > MESA.y + MESA.h + 26) return null
+  return {
+    x: clamp(x, 0, W - MESA.x - MESA_PAPER.w),
+    y: clamp(y, MESA.y, MESA.y + MESA.h - MESA_PAPER.h),
+  }
+}
 
 type StampKind = 'approved' | 'denied'
 
@@ -114,6 +138,20 @@ function BorderCast() {
   )
 }
 
+const MESES = [
+  'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+  'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
+]
+
+/* en los textos de la intro se puede escribir {dia} y {mes} y se sustituyen
+   por el dia y el mes en el que se abre la pagina */
+function conFecha(texto: string) {
+  const hoy = new Date()
+  return texto
+    .replace(/\{dia\}/g, String(hoy.getDate()))
+    .replace(/\{mes\}/g, MESES[hoy.getMonth()])
+}
+
 function Intro({ onStart }: { onStart: () => void }) {
   const [index, setIndex] = useState(0)
   const screen = INTRO_SCREENS[index]
@@ -129,10 +167,10 @@ function Intro({ onStart }: { onStart: () => void }) {
   return (
     <div className="intro" onPointerEnter={unlockAudio} onPointerDown={unlockAudio}>
       <div className="intro-screen" key={index}>
-        <img className="intro-art" src={screen.image} alt={screen.alt} />
+        <img className="intro-art" src={screen.image} alt={conFecha(screen.alt)} />
         {screen.lines.length > 0 && (
           <div className="intro-copy">
-            {screen.lines.map((line) => <p key={line}>{line}</p>)}
+            {screen.lines.map((line) => <p key={line}>{conFecha(line)}</p>)}
           </div>
         )}
       </div>
@@ -151,6 +189,70 @@ function Intro({ onStart }: { onStart: () => void }) {
   )
 }
 
+/* medida de un papel a 1:1 como maximo, igual que fitPaper pero sin depender
+   de los aspectos cargados (solo para la hoja de maquetado) */
+function fitDocSize(doc: PortfolioDoc) {
+  const ratio = DOC_ASPECT[doc.id] ?? 0.8
+  const naturalH = doc.native / ratio
+  const scale = Math.min(1, PAPER_MAX_W / doc.native, PAPER_MAX_H / naturalH)
+  return { width: Math.round(doc.native * scale), height: Math.round(naturalH * scale) }
+}
+
+function DocSheet() {
+  const ZOOM = 2.2
+  return (
+    <div className="docsheet">
+      {DOCUMENTS.map((doc) => {
+        const base = fitDocSize(doc)
+        const size = { width: Math.round(base.width * ZOOM), height: Math.round(base.height * ZOOM) }
+        const fieldScale = size.width / doc.native
+        return (
+          <div className="docsheet-cell" key={doc.id}>
+            <div className="docsheet-label">{doc.id}</div>
+            <div className="docsheet-doc" style={{ width: size.width, height: size.height }}>
+              <img className="paper-sheet" src={doc.image} alt="" draggable={false} />
+              {doc.photo && (
+                <span
+                  className="doc-photo"
+                  style={{
+                    left: `${doc.photo.x}%`,
+                    top: `${doc.photo.y}%`,
+                    width: `${doc.photo.w}%`,
+                    height: `${doc.photo.h}%`,
+                    background: doc.photo.tint,
+                    mixBlendMode: doc.photo.blend as React.CSSProperties['mixBlendMode'],
+                  }}
+                >
+                  <img src="/assets/avatar.png" alt="" draggable={false} />
+                </span>
+              )}
+              {doc.fields.map((field, i) => (
+                <span
+                  key={i}
+                  className="field"
+                  style={{
+                    left: `${field.x}%`,
+                    top: `${field.y}%`,
+                    width: field.w ? `${field.w}%` : undefined,
+                    height: field.h ? `${field.h}%` : undefined,
+                    fontSize: field.size ? `${field.size * fieldScale * 1.6}px` : undefined,
+                    textAlign: field.align,
+                    fontWeight: field.bold ? 700 : 400,
+                    color: field.color,
+                    background: field.bg,
+                  }}
+                >
+                  {field.t}
+                </span>
+              ))}
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 function App() {
   const [started, setStarted] = useState(false)
   const [shutter, setShutter] = useState(true)
@@ -158,6 +260,8 @@ function App() {
   const [roster, setRoster] = useState<PortfolioDoc[]>(DOCUMENTS)
   const [placed, setPlaced] = useState<PortfolioDoc | null>(null)
   const [position, setPosition] = useState({ x: 0, y: 0 })
+  const [mesaPos, setMesaPos] = useState<Record<string, { x: number; y: number }>>({})
+  const [zOrder, setZOrder] = useState<Record<string, number>>({})
   const [stamps, setStamps] = useState<PlacedStamp[]>([])
   const [aspects, setAspects] = useState<Record<string, number>>({})
   const [mode, setMode] = useState<Mode>(null)
@@ -166,6 +270,9 @@ function App() {
   const paperRef = useRef<HTMLDivElement>(null)
   const deskRef = useRef<HTMLDivElement>(null)
   const paperDrag = useRef<{ dx: number; dy: number } | null>(null)
+  const positionRef = useRef({ x: 0, y: 0 })
+  const mesaDrag = useRef<{ id: string; dx: number; dy: number; x: number; y: number } | null>(null)
+  const zCounter = useRef(0)
   const stampId = useRef(0)
 
   useEffect(() => { loadBitmapFont('/assets-english/fonts/atarismall_u_regular_8.png') }, [])
@@ -281,28 +388,108 @@ function App() {
     }
   }, [mode, paperSize, toPaperSpace])
 
-  const placeDocument = useCallback((doc: PortfolioDoc) => {
-    const size = fitPaper(doc)
-    setPlaced(doc)
-    setStamps([])
-    setRoster((current) => current.filter((item) => item.id !== doc.id))
-    setPosition({
-      x: Math.round(SURFACE.x + (SURFACE.w - size.width) / 2),
-      y: Math.round(SURFACE.y + (SURFACE.h - size.height) / 2),
+  /* cada documento tiene su hueco fijo en la mesa, con algo de desajuste
+     para que la pila parezca dejada a mano y no muy automatica */
+  const slotOf = useCallback((doc: PortfolioDoc) => {
+    const i = Math.max(0, DOCUMENTS.findIndex((item) => item.id === doc.id))
+    const base = MESA_SLOTS[i % MESA_SLOTS.length]
+    return {
+      x: base.x + Math.round(hash(i, 1) * 5) - 2,
+      y: base.y + Math.round(hash(i, 2) * 2) - 1,
+      rot: base.rot,
+    }
+  }, [])
+
+  /* saca un papel de la mesa arrastrandolo: se pega al cursor por el punto
+     donde se ha cogido y, al soltar, se queda donde se ha dejado (dentro de
+     la franja) o pasa a la zona de inspeccion si cae a la derecha */
+  const startMesaDrag = useCallback((event: ReactPointerEvent<HTMLButtonElement>, doc: PortfolioDoc) => {
+    if (event.button !== 0 || mode) return
+    event.preventDefault()
+    const rect = deskRef.current?.getBoundingClientRect()
+    if (!rect) return
+    const toDesk = (cx: number, cy: number) => ({
+      x: (cx - rect.left) * (W / rect.width),
+      y: (cy - rect.top) * ((H - DESK_Y) / rect.height),
     })
-    play('paper', 'drop', { volume: 0.5 })
-  }, [fitPaper])
+    // el arrastre trabaja en coordenadas del escritorio, no de la mesa
+    const slot = slotOf(doc)
+    const live = mesaPos[doc.id] ?? { x: MESA.x + slot.x, y: MESA.y + slot.y }
+    const p = toDesk(event.clientX, event.clientY)
+
+    setZOrder((current) => ({ ...current, [doc.id]: (zCounter.current += 1) }))
+    setMesaPos((current) => ({ ...current, [doc.id]: live }))
+    mesaDrag.current = { id: doc.id, dx: p.x - live.x, dy: p.y - live.y, x: live.x, y: live.y }
+    play('paper', 'grab', { volume: 0.4 })
+
+    const move = (native: PointerEvent) => {
+      const drag = mesaDrag.current
+      if (!drag) return
+      const q = toDesk(native.clientX, native.clientY)
+      drag.x = clamp(q.x - drag.dx, 0, W - MESA_PAPER.w)
+      drag.y = clamp(q.y - drag.dy, 0, (H - DESK_Y) - MESA_PAPER.h)
+      setMesaPos((current) => ({ ...current, [drag.id]: { x: drag.x, y: drag.y } }))
+    }
+    const drop = () => {
+      window.removeEventListener('pointermove', move)
+      window.removeEventListener('pointerup', drop)
+      window.removeEventListener('pointercancel', drop)
+      const drag = mesaDrag.current
+      mesaDrag.current = null
+      if (!drag) return
+
+      if (drag.x > WALL_W) {
+        // a la derecha: pasa a ser el documento de trabajo
+        setMesaPos((current) => {
+          const next = { ...current }
+          delete next[drag.id]
+          return next
+        })
+        setRoster((current) => current.filter((item) => item.id !== doc.id))
+        setPlaced(doc)
+        setStamps([])
+        setPosition({ x: Math.round(drag.x - WALL_W), y: Math.round(drag.y) })
+        play('paper', 'drop', { volume: 0.5 })
+        return
+      }
+      // si se ha soltado cerca de la franja se queda, encajado dentro de ella
+      const snapped = snapToBand(drag.x, drag.y)
+      if (snapped) {
+        setMesaPos((current) => ({ ...current, [drag.id]: snapped }))
+        play('paper', 'drop', { volume: 0.5 })
+        return
+      }
+      setMesaPos((current) => {
+        const next = { ...current }
+        delete next[drag.id]
+        return next
+      })
+      play('paper', 'release', { volume: 0.4 })
+    }
+    window.addEventListener('pointermove', move)
+    window.addEventListener('pointerup', drop)
+    window.addEventListener('pointercancel', drop)
+  }, [mode, mesaPos, slotOf])
 
   /* la bocina solo avisa: suena el anuncio y no cambia nada en pantalla */
   const callEntrant = useCallback(() => {
     play('speech', 'announce', { volume: 0.55 })
   }, [])
 
-  const returnDocument = useCallback(() => {
+  const returnDocument = useCallback((at?: { x: number; y: number }) => {
     if (!placed) return
+    // siempre vuelve a la pila; `at` solo decide en que hueco se queda
     setRoster((current) => [placed, ...current])
     setPlaced(null)
     setStamps([])
+    if (at) {
+      const snapped = snapToBand(at.x, at.y)
+      if (snapped) {
+        setMesaPos((current) => ({ ...current, [placed.id]: snapped }))
+        play('paper', 'drop', { volume: 0.45 })
+        return
+      }
+    }
     play('filer', 'open', { volume: 0.4 })
   }, [placed])
 
@@ -315,10 +502,13 @@ function App() {
     const areaLeft = rect.left + rect.width * (WALL_W / W)
     const areaTop = rect.top
     const size = fitPaper(placed)
-    setPosition({
-      x: clamp((event.clientX - areaLeft) / areaW * (W - WALL_W) - paperDrag.current.dx, 0, (W - WALL_W) - size.width),
+    // se puede arrastrar hasta encima de la mesa de la izquierda
+    const next = {
+      x: clamp((event.clientX - areaLeft) / areaW * (W - WALL_W) - paperDrag.current.dx, -WALL_W, (W - WALL_W) - size.width),
       y: clamp((event.clientY - areaTop) / areaH * (H - DESK_Y) - paperDrag.current.dy, 0, (H - DESK_Y) - size.height),
-    })
+    }
+    positionRef.current = next
+    setPosition(next)
   }, [placed, fitPaper])
 
   const endPaperDrag = useCallback(() => {
@@ -344,17 +534,22 @@ function App() {
       dx: (event.clientX - area.left) / area.width * (W - WALL_W) - position.x,
       dy: (event.clientY - area.top) / area.height * (H - DESK_Y) - position.y,
     }
+    const size = fitPaper(placed)
     const move = (native: PointerEvent) => handlePaperMove(native)
     const up = () => {
       window.removeEventListener('pointermove', move)
       window.removeEventListener('pointerup', up)
       window.removeEventListener('pointercancel', up)
       endPaperDrag()
+      // soltado encima de la mesa de la izquierda vuelve a la pila
+      if (placed && positionRef.current.x + size.width / 2 < 0) {
+        returnDocument({ x: WALL_W + positionRef.current.x, y: positionRef.current.y })
+      }
     }
     window.addEventListener('pointermove', move)
     window.addEventListener('pointerup', up)
     window.addEventListener('pointercancel', up)
-  }, [placed, mode, position, handlePaperMove, endPaperDrag])
+  }, [placed, mode, position, handlePaperMove, endPaperDrag, fitPaper, returnDocument])
 
   const toggleMute = useCallback(() => {
     setMutedState((value) => {
@@ -367,6 +562,8 @@ function App() {
   }, [started])
 
   const fieldScale = placed ? (paperSize.width / placed.native) : 1
+
+  if (new URLSearchParams(window.location.search).has('sheet')) return <DocSheet />
 
   if (!started) return <Intro onStart={() => setStarted(true)} />
 
@@ -422,24 +619,38 @@ function App() {
             <img className="stampbar-bot" src="/assets-english/StampBarBot.png" alt="" draggable={false} />
           </div>
 
-          <div className="tray">
-            {roster.map((doc, index) => (
-              <button
-                type="button"
-                key={doc.id}
-                className="tray-doc"
-                style={{ left: `${3 + index * 21}px` }}
-                onClick={() => placeDocument(doc)}
-                onPointerDown={() => play('inspect', 'highlight', { volume: 0.3 })}
-                title={doc.title}
-                aria-label={`Inspeccionar ${doc.title}`}
-              >
-                <img src={doc.image} alt="" draggable={false} />
-              </button>
-            ))}
+          <div
+            className="mesa"
+            style={{ top: `${MESA.y}px`, width: `${MESA.w}px`, height: `${MESA.h}px` }}
+          >
+            {roster.map((doc) => {
+              const slot = slotOf(doc)
+              const live = mesaPos[doc.id]
+              return (
+                <button
+                  type="button"
+                  key={doc.id}
+                  className="mesa-doc"
+                  style={{
+                    left: `${(live ? live.x - MESA.x : slot.x)}px`,
+                    top: `${(live ? live.y - MESA.y : slot.y)}px`,
+                    width: `${MESA_PAPER.w}px`,
+                    height: `${MESA_PAPER.h}px`,
+                    zIndex: zOrder[doc.id] ?? 1,
+                    ['--rot' as string]: `${slot.rot}deg`,
+                  }}
+                  onPointerDown={(event) => startMesaDrag(event, doc)}
+                  onPointerEnter={() => play('inspect', 'highlight', { volume: 0.22 })}
+                  title={doc.title}
+                  aria-label={`Arrastrar ${doc.title} a la mesa`}
+                >
+                  <img src={doc.image} alt="" draggable={false} />
+                </button>
+              )
+            })}
           </div>
 
-          <button type="button" className="tray-give" onClick={returnDocument} disabled={!placed} title="Entregar">
+          <button type="button" className="tray-give" onClick={() => returnDocument()} disabled={!placed} title="Entregar">
             <img src="/assets/GiveIcon.png" alt="Entregar" draggable={false} />
           </button>
 

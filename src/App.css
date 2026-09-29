@@ -299,45 +299,6 @@ canvas {
   opacity: 1;
 }
 
-/* ---------- document tray (bottom-left desk) ---------- */
-.tray {
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: 178px;
-  height: 217px;
-  pointer-events: none;
-}
-
-/* 8 documentos caben en los 178px del escritorio: paso de 21px
-   (5 + 7*21 + 21 = 173) dejando margen a ambos lados */
-.tray-doc {
-  position: absolute;
-  top: 152px;
-  width: 21px;
-  height: 28px;
-  padding: 0;
-  background: transparent;
-  border: 0;
-  cursor: grab;
-  pointer-events: auto;
-  line-height: 0;
-}
-
-.tray-doc img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  /* alineados por la base: si no, cada documento queda a una altura
-     distinta por su proporción y parecen desordenados */
-  object-position: bottom center;
-}
-
-.tray-doc:hover {
-  transform: translateY(-3px);
-  filter: brightness(1.22);
-}
-
 /* esquina inferior derecha del escritorio */
 .tray-give {
   position: absolute;
@@ -362,6 +323,49 @@ canvas {
   width: 60px;
   height: 15px;
   object-fit: contain;
+}
+
+/* ---------- pila de papeles de la mesa ----------
+   Los papeles se solapan y estan girados. El contenedor no recorta para
+   que el papel que arrastras pueda salirse hacia la zona de inspeccion. */
+.mesa {
+  position: absolute;
+  left: 0;
+  top: 107px;
+  pointer-events: none;
+}
+
+.mesa-doc {
+  position: absolute;
+  left: 0;
+  top: 0;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  cursor: grab;
+  pointer-events: auto;
+  line-height: 0;
+  touch-action: none;
+  transform: rotate(var(--rot, 0deg));
+  transform-origin: 50% 60%;
+  /* sombra dura, sin desenfoque, para no perder el pixel art */
+  filter: drop-shadow(1px 2px 0 rgba(0, 0, 0, 0.45));
+}
+
+.mesa-doc img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: bottom center;
+  image-rendering: pixelated;
+}
+
+.mesa-doc:hover {
+  filter: brightness(1.25) drop-shadow(1px 2px 0 rgba(0, 0, 0, 0.45));
+}
+
+.mesa-doc:active {
+  cursor: grabbing;
 }
 
 /* ---------- paper ---------- */
@@ -411,7 +415,9 @@ canvas {
   position: absolute;
   color: #3a3a34;
   font-family: 'PixelDoc', 'Courier New', monospace;
-  line-height: 1;
+  /* con line-height 1 el tilde de las mayusculas (INGLES, DIPUTACION) se
+     salia de la caja por overflow:hidden y no se veia */
+  line-height: 1.3;
   pointer-events: none;
   overflow: hidden;
   white-space: nowrap;
@@ -485,6 +491,44 @@ canvas {
   z-index: 5;
 }
 
+/* ---------- hoja de maquetado de documentos (solo ?sheet) ---------- */
+.docsheet {
+  position: fixed;
+  inset: 0;
+  overflow: auto;
+  background: #14161a;
+  padding: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.docsheet-cell {
+  position: relative;
+  background: #23262b;
+  padding: 18px 10px 10px;
+  border: 1px solid #3a3f46;
+}
+
+.docsheet-label {
+  position: absolute;
+  top: 3px;
+  left: 6px;
+  color: #ffd75e;
+  font: 11px monospace;
+}
+
+.docsheet-doc {
+  position: relative;
+}
+
+.docsheet-doc .paper-sheet {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
 /* ---------- intro ---------- */
 .intro {
   position: fixed;
@@ -494,16 +538,16 @@ canvas {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4vh;
+  gap: 3vh;
   background: #000;
-  padding: 4vh 3vw;
+  padding: 3vh 3vw;
 }
 
 .intro-screen {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4vh;
+  gap: 3vh;
   max-width: 92vw;
   animation: intro-in 0.35s steps(4) both;
 }
@@ -514,23 +558,23 @@ canvas {
 }
 
 .intro-art {
-  width: min(46vw, 46vh);
+  width: min(64vw, 58vh);
   height: auto;
-  max-height: 46vh;
+  max-height: 58vh;
   object-fit: contain;
 }
 
 .intro-copy {
   display: flex;
   flex-direction: column;
-  gap: 1.6vh;
+  gap: 1vh;
   text-align: center;
 }
 
 .intro-copy p {
   font-family: 'PixelDoc', 'Courier New', monospace;
-  font-size: clamp(11px, 2.1vh, 22px);
-  line-height: 1.7;
+  font-size: clamp(13px, 3vh, 30px);
+  line-height: 1.6;
   color: #d8d3c2;
 }
 
@@ -540,9 +584,9 @@ canvas {
   border-bottom: 2px solid #6d6a5c;
   color: #cfcbba;
   font-family: 'PixelUI', monospace;
-  font-size: clamp(9px, 1.5vh, 16px);
+  font-size: clamp(11px, 2vh, 20px);
   letter-spacing: 2px;
-  padding: 1.4vh 4px 1vh;
+  padding: 1.2vh 4px 0.8vh;
   cursor: pointer;
 }
 
