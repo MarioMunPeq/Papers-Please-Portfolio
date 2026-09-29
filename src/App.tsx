@@ -259,7 +259,8 @@ function DocSheet() {
 function App() {
   const [started, setStarted] = useState(false)
   const [shutter, setShutter] = useState(true)
-  const [frame, setFrame] = useState({ scale: 1, x: 0, y: 0, vw: 0, vh: 0 })
+  const [frame, setFrame] = useState({ scale: 1, x: 0, y: 0, vw: 0, vh: 0, aplanar: true })
+  const [jugandoEnVertical, setJugandoEnVertical] = useState(false)
   const [roster, setRoster] = useState<PortfolioDoc[]>(DOCUMENTS)
   const [placed, setPlaced] = useState<PortfolioDoc | null>(null)
   const [position, setPosition] = useState({ x: 0, y: 0 })
@@ -313,6 +314,10 @@ function App() {
         y: (window.innerHeight - H * s) / 2,
         vw: window.innerWidth,
         vh: window.innerHeight,
+        // el fondo con degradado solo aguanta si sobra poca altura. da igual
+        // que mande el ancho o el alto: lo que decide es cuanto hueco queda
+        // arriba y abajo, que en vertical y en tablet apaisada es mucho.
+        aplanar: (H * s) / window.innerHeight < 0.8,
       })
     }
     fit()
@@ -573,6 +578,7 @@ function App() {
   return (
     <div
       className="viewport"
+      data-plano={frame.aplanar ? 'si' : 'no'}
       style={{
         ['--split' as string]: `${frame.vh > 0 ? Math.min(100, Math.max(0, (frame.y / frame.vh) * 100)) : 0}%`,
       }}
@@ -746,6 +752,25 @@ function App() {
           style={{ left: cursor.x, top: cursor.y }}
           draggable={false}
         />
+      )}
+
+      {!jugandoEnVertical && (
+        <div className="rotate-card">
+          <div className="rotate-inner">
+            <span className="rotate-icon" aria-hidden="true" />
+            <h2 className="rotate-title">GIRA EL MÓVIL</h2>
+            <p className="rotate-text">
+              El puesto de inspección se ve mucho mejor en horizontal.
+            </p>
+            <button
+              type="button"
+              className="rotate-skip"
+              onClick={() => setJugandoEnVertical(true)}
+            >
+              JUGAR DE TODOS MODOS
+            </button>
+          </div>
+        </div>
       )}
     </div>
   )
