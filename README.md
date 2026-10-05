@@ -53,9 +53,9 @@ El mismo panel, en texto plano. Todos tienen repo y demo en vivo.
 
 | Proyecto | Qué es | Stack | Enlaces |
 |---|---|---|---|
-| [Repository-Library](https://github.com/MarioMunPeq/Repository-Library) | Portfolio con estética de biblioteca de Steam | TypeScript | [repo](https://github.com/MarioMunPeq/Repository-Library) · [demo](https://mariomunpeq.github.io/Repository-Library/) |
+| [Steam-Portfolio](https://github.com/MarioMunPeq/Steam-Portfolio) | Portfolio con estética de biblioteca de Steam | TypeScript | [repo](https://github.com/MarioMunPeq/Steam-Portfolio) · [demo](https://mariomunpeq.github.io/Steam-Portfolio/) |
 | [portfolio-persona5](https://github.com/MarioMunPeq/portfolio-persona5) | CV viviente con estética de Persona 5 | TypeScript | [repo](https://github.com/MarioMunPeq/portfolio-persona5) · [demo](http://mariomunpeq.is-a.dev/) |
-| [Vault-Archive](https://github.com/MarioMunPeq/Vault-Archive) | Portfolio dentro de un Pip-Boy 3000 de Fallout 3 | TypeScript | [repo](https://github.com/MarioMunPeq/Vault-Archive) · [demo](https://mariomunpeq.github.io/Vault-Archive/) |
+| [Fallout-Portfolio](https://github.com/MarioMunPeq/Fallout-Portfolio) | Portfolio dentro de un Pip-Boy 3000 de Fallout 3 | TypeScript | [repo](https://github.com/MarioMunPeq/Fallout-Portfolio) · [demo](https://mariomunpeq.github.io/Fallout-Portfolio/) |
 | [Dungeon-Archive](https://github.com/MarioMunPeq/Dungeon-Archive) | Referencia de D&D 5e, offline y mobile-first | TypeScript | [repo](https://github.com/MarioMunPeq/Dungeon-Archive) · [demo](https://mariomunpeq.github.io/Dungeon-Archive/) |
 | [Cosmere-Archive](https://github.com/MarioMunPeq/Cosmere-Archive) | Archivo visual interactivo del universo de Cosmere | TypeScript | [repo](https://github.com/MarioMunPeq/Cosmere-Archive) · [demo](https://mariomunpeq.github.io/Cosmere-Archive/) |
 | [Euromario](https://github.com/MarioMunPeq/Euromario) | Noticias de videojuegos resumidas con IA cada 24 h | Python | [repo](https://github.com/MarioMunPeq/Euromario) · [demo](https://mariomunpeq.github.io/Euromario/) |

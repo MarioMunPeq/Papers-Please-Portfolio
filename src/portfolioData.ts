@@ -309,11 +309,11 @@ export interface PortfolioProject {
 export const PROJECTS: PortfolioProject[] = [
   {
     n: '01',
-    nombre: 'REPOSITORY-LIBRARY',
+    nombre: 'STEAM-PORTFOLIO',
     desc: 'Estética de biblioteca de Steam',
     tech: 'TypeScript',
-    repo: 'https://github.com/MarioMunPeq/Repository-Library',
-    demo: 'https://mariomunpeq.github.io/Repository-Library/',
+    repo: 'https://github.com/MarioMunPeq/Steam-Portfolio',
+    demo: 'https://mariomunpeq.github.io/Steam-Portfolio/',
   },
   {
     n: '02',
@@ -325,11 +325,11 @@ export const PROJECTS: PortfolioProject[] = [
   },
   {
     n: '03',
-    nombre: 'VAULT-ARCHIVE',
+    nombre: 'FALLOUT-PORTFOLIO',
     desc: 'Dentro de un Pip-Boy de Fallout 3',
     tech: 'TypeScript',
-    repo: 'https://github.com/MarioMunPeq/Vault-Archive',
-    demo: 'https://mariomunpeq.github.io/Vault-Archive/',
+    repo: 'https://github.com/MarioMunPeq/Fallout-Portfolio',
+    demo: 'https://mariomunpeq.github.io/Fallout-Portfolio/',
   },
   {
     n: '04',
